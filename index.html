@@ -7,7 +7,6 @@
   <style>
     :root{
       --bg:#0b0b0c;
-      --line:#2b2b31;
       --text:#f2f2f2;
       --muted:#b5b5b5;
     }
@@ -44,7 +43,7 @@
       z-index:10;
     }
     .title{
-      font-weight:800;
+      font-weight:900;
       letter-spacing:0.10em;
       font-size:14px;
     }
@@ -55,7 +54,7 @@
       white-space:nowrap;
     }
 
-    /* Shared overlay layout */
+    /* Shared screen */
     .screen{
       flex:1;
       position:relative;
@@ -66,12 +65,20 @@
     .bg{
       position:absolute;
       inset:0;
-      background-image:url("girl.PNG");
       background-size:cover;
       background-position:center;
       transform:scale(1.02);
       filter:saturate(0.95) contrast(1.05);
     }
+    /* Top uses girl_top.png */
+    #startScreen .bg{
+      background-image:url("girl_top.png");
+    }
+    /* Game uses girl.png */
+    #gameScreen .bg{
+      background-image:url("girl.png");
+    }
+
     .overlay{
       position:absolute;
       inset:0;
@@ -85,6 +92,12 @@
         rgba(0,0,0,0.10),
         rgba(0,0,0,0.80)
       );
+    }
+
+    /* Flash effect on correct */
+    #gameScreen.flash .bg{
+      filter:saturate(1.05) contrast(1.10) brightness(1.35);
+      transition: filter 120ms ease;
     }
 
     /* Panels */
@@ -148,7 +161,7 @@
       border-radius:12px;
       padding:14px 12px;
       font-size:16px;
-      font-weight:800;
+      font-weight:900;
       letter-spacing:0.10em;
       cursor:pointer;
       user-select:none;
@@ -170,7 +183,7 @@
       background:rgba(255,255,255,0.07);
     }
 
-    /* Start screen */
+    /* Start screen text */
     .heroTitle{
       font-size:18px;
       font-weight:900;
@@ -224,7 +237,7 @@
       <div class="meta"><span id="counter">-</span></div>
     </header>
 
-    <!-- ===== START SCREEN (full image) ===== -->
+    <!-- ===== START SCREEN ===== -->
     <div id="startScreen" class="screen">
       <div class="bg"></div>
       <div class="overlay">
@@ -242,7 +255,7 @@
       </div>
     </div>
 
-    <!-- ===== GAME SCREEN (full image) ===== -->
+    <!-- ===== GAME SCREEN ===== -->
     <div id="gameScreen" class="screen hide">
       <div class="bg"></div>
       <div class="overlay" style="gap:12px;">
@@ -317,12 +330,18 @@
       setButtonsDisabled(false);
     }
 
+    function flashCorrect(){
+      gameScreen.classList.add("flash");
+      setTimeout(()=> gameScreen.classList.remove("flash"), 140);
+    }
+
     function answer(choice){
       if(locked) return;
       locked = true;
       setButtonsDisabled(true);
 
       const ok = (choice === questions[current].correct);
+      if(ok) flashCorrect();
       elS.textContent = ok ? "ギュウ" : "……";
 
       setTimeout(()=>{
@@ -330,7 +349,6 @@
         if(current < questions.length){
           showQuestion();
         }else{
-          // 終了画面（簡易）
           elQ.textContent = "終了";
           elS.textContent = "ギュウ";
           elC.textContent = `${questions.length}/${questions.length}`;
@@ -350,13 +368,11 @@
       restart();
     }
 
-    // グローバル（終了ボタン用）
     window.restart = restart;
 
     document.getElementById("startBtn").addEventListener("click", startGame);
     document.getElementById("restartBtn").addEventListener("click", startGame);
 
-    // 初期はトップ
     elC.textContent = "-";
   </script>
 </body>
