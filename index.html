@@ -88,6 +88,11 @@ header{
   );
 }
 
+/* トップ：パネル内を中央寄せ（STARTずれ対策） */
+#startScreen .panel{
+  text-align:center;
+}
+
 /* 問題画面：上下に広げる */
 #gameScreen .overlay{
   justify-content:space-between;
@@ -178,6 +183,12 @@ button:disabled{
   font-size:18px;
   padding:16px 24px;
   background:#ffffff22;
+}
+
+/* 追加：STARTボタンを確実に中央へ */
+#startBtn{
+  display:block;
+  margin:0 auto;
 }
 
 .hide{ display:none; }
