@@ -4,13 +4,15 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>チーと言えばギュウと答える</title>
+
   <style>
     :root{
       --bg:#0b0b0c;
       --text:#f2f2f2;
-      --muted:#b5b5b5;
+      --muted:#cfcfcf;
     }
     *{ box-sizing:border-box; }
+
     body{
       margin:0;
       font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP","Segoe UI",sans-serif;
@@ -19,65 +21,54 @@
       min-height:100svh;
     }
 
-    /* App frame */
+    /* ===== App ===== */
     .app{
-      width:min(560px, 100%);
+      width:min(560px,100%);
       margin:0 auto;
       min-height:100svh;
       display:flex;
       flex-direction:column;
-      border-left:1px solid rgba(255,255,255,0.06);
-      border-right:1px solid rgba(255,255,255,0.06);
     }
+
     header{
       padding:14px 16px 10px;
-      border-bottom:1px solid rgba(255,255,255,0.10);
       display:flex;
       justify-content:space-between;
       align-items:flex-end;
-      gap:10px;
-      background:rgba(0,0,0,0.35);
-      backdrop-filter: blur(6px);
+      background:rgba(0,0,0,0.25);
+      backdrop-filter:blur(6px);
       position:sticky;
       top:0;
       z-index:10;
     }
     .title{
-      font-weight:900;
-      letter-spacing:0.10em;
       font-size:14px;
+      font-weight:900;
+      letter-spacing:0.12em;
     }
     .meta{
       font-size:12px;
       color:var(--muted);
-      letter-spacing:0.06em;
-      white-space:nowrap;
     }
 
-    /* Shared screen */
+    /* ===== Screen ===== */
     .screen{
       flex:1;
       position:relative;
-      min-height:calc(100svh - 56px);
       overflow:hidden;
-      background:#000;
     }
+
     .bg{
       position:absolute;
       inset:0;
       background-size:cover;
       background-position:center;
       transform:scale(1.02);
-      filter:saturate(0.95) contrast(1.05);
+      filter:saturate(1.0) contrast(1.05);
     }
-    /* Top uses girl_top.png */
-    #startScreen .bg{
-      background-image:url("girl_top.png");
-    }
-    /* Game uses girl.png */
-    #gameScreen .bg{
-      background-image:url("girl.png");
-    }
+
+    #startScreen .bg{ background-image:url("girl_top.png"); }
+    #gameScreen  .bg{ background-image:url("girl.png"); }
 
     .overlay{
       position:absolute;
@@ -89,293 +80,235 @@
       gap:12px;
       background:linear-gradient(
         to bottom,
-        rgba(0,0,0,0.10),
-        rgba(0,0,0,0.80)
+        rgba(0,0,0,0.05),
+        rgba(0,0,0,0.65)
       );
     }
 
-    /* Game layout: show more girl, push choices down */
+    /* 問題画面：上下に広げる */
     #gameScreen .overlay{
-      justify-content: space-between;
+      justify-content:space-between;
     }
 
-    /* Flash effect on correct */
+    /* ===== 正解フラッシュ ===== */
     #gameScreen.flash .bg{
-      filter:saturate(1.05) contrast(1.10) brightness(1.35);
-      transition: filter 120ms ease;
+      filter:saturate(1.1) contrast(1.12) brightness(1.45);
+      transition:filter 300ms ease;
     }
 
-    /* Panels */
+    /* ===== UI ===== */
     .panel{
-      border:1px solid rgba(255,255,255,0.12);
       background:rgba(0,0,0,0.35);
-      backdrop-filter: blur(6px);
+      backdrop-filter:blur(6px);
       border-radius:14px;
       padding:14px;
     }
+
     .bubble{
-      position:relative;
-      border:1px solid rgba(255,255,255,0.14);
-      background:rgba(255,255,255,0.06);
+      background:rgba(255,255,255,0.08);
       border-radius:14px;
       padding:14px;
-      min-height:98px;
+      min-height:96px;
       display:flex;
       flex-direction:column;
       justify-content:space-between;
-      gap:10px;
-      margin-bottom:6px;
     }
-    .bubble::before{
-      content:"";
-      position:absolute;
-      left:16px;
-      top:-8px;
-      width:16px;
-      height:16px;
-      background:rgba(255,255,255,0.06);
-      border-left:1px solid rgba(255,255,255,0.14);
-      border-top:1px solid rgba(255,255,255,0.14);
-      transform: rotate(45deg);
-      border-top-left-radius:2px;
-    }
+
     .question{
       font-size:18px;
       line-height:1.35;
-      letter-spacing:0.02em;
     }
+
     .speech{
       align-self:flex-end;
       font-size:22px;
       font-weight:900;
-      letter-spacing:0.10em;
+      letter-spacing:0.1em;
       min-height:28px;
     }
 
-    /* Buttons */
     .choices{
       display:grid;
       grid-template-columns:1fr 1fr;
       gap:10px;
     }
+
     button{
-      -webkit-tap-highlight-color: transparent;
       appearance:none;
-      border:1px solid rgba(255,255,255,0.14);
-      background:rgba(255,255,255,0.05);
-      color:var(--text);
+      border:none;
       border-radius:12px;
       padding:14px 12px;
       font-size:16px;
       font-weight:900;
-      letter-spacing:0.10em;
-      cursor:pointer;
-      user-select:none;
-      transition: transform 0.06s ease, background 0.12s ease, border-color 0.12s ease;
-      width:100%;
+      letter-spacing:0.1em;
+      background:rgba(255,255,255,0.10);
+      color:var(--text);
+      transition:transform 0.1s, background 0.2s;
     }
+
     button:active{
-      transform: translateY(1px) scale(0.99);
-      background:rgba(255,255,255,0.08);
+      transform:translateY(1px) scale(0.98);
     }
+
     button:disabled{
-      opacity:0.55;
-      cursor:not-allowed;
-    }
-    .big{
-      padding:16px 14px;
-      font-size:18px;
-      border-radius:14px;
-      background:rgba(255,255,255,0.07);
+      opacity:0.5;
     }
 
-    /* Keep pressed state briefly */
     .choice.selected{
-      transform: translateY(2px) scale(0.98);
-      background: rgba(255,255,255,0.12);
-      border-color: rgba(255,255,255,0.35);
+      background:rgba(255,255,255,0.25);
+      transform:translateY(2px) scale(0.97);
     }
 
-    /* Start screen text */
+    .big{
+      font-size:18px;
+      padding:16px;
+      background:rgba(255,255,255,0.18);
+    }
+
     .heroTitle{
       font-size:18px;
       font-weight:900;
-      letter-spacing:0.12em;
-      line-height:1.2;
+      letter-spacing:0.14em;
     }
 
-    .hide{ display:none !important; }
+    .hide{ display:none; }
 
-    @media (max-width:420px){
+    @media(max-width:420px){
       .question{ font-size:17px; }
-      button{ padding:13px 10px; }
-      .overlay{ padding:14px; }
     }
   </style>
 </head>
 
 <body>
-  <div class="app">
-    <header>
-      <div class="title">チーと言えばギュウと答える</div>
-      <div class="meta"><span id="counter">-</span></div>
-    </header>
+<div class="app">
 
-    <!-- ===== START SCREEN ===== -->
-    <div id="startScreen" class="screen">
-      <div class="bg"></div>
-      <div class="overlay">
-        <div class="panel">
-          <div class="heroTitle">ガチ！チー牛診断！！</div>
-          <div style="margin-top:16px;">
-            <button class="big" id="startBtn">START</button>
-          </div>
-        </div>
-      </div>
-    </div>
+  <header>
+    <div class="title">チーと言えばギュウと答える</div>
+    <div class="meta"><span id="counter">-</span></div>
+  </header>
 
-    <!-- ===== GAME SCREEN ===== -->
-    <div id="gameScreen" class="screen hide">
-      <div class="bg"></div>
-      <div class="overlay" style="gap:12px;">
-        <div class="bubble">
-          <div class="question" id="question">…</div>
-          <div class="speech" id="speech">…</div>
+  <!-- ===== START ===== -->
+  <div id="startScreen" class="screen">
+    <div class="bg"></div>
+    <div class="overlay">
+      <div class="panel">
+        <div class="heroTitle">ガチ！チー牛診断！！</div>
+        <div style="margin-top:16px;">
+          <button class="big" id="startBtn">START</button>
         </div>
-
-        <div class="panel">
-          <div class="choices" id="choices"></div>
-        </div>
-        <!-- footerは削除して、女の子を大きく見せる -->
       </div>
     </div>
   </div>
 
-  <script>
-    // ===== 採用確定・問題セット（本番用）=====
-    const questions = [
-      { text: "あなたはチー牛ですか？", correct: "はい" },
-      { text: "チーと言えば？", correct: "ギュウ" },
+  <!-- ===== GAME ===== -->
+  <div id="gameScreen" class="screen hide">
+    <div class="bg"></div>
+    <div class="overlay">
+      <div class="bubble">
+        <div class="question" id="question">…</div>
+        <div class="speech" id="speech">…</div>
+      </div>
+      <div class="panel">
+        <div class="choices" id="choices"></div>
+      </div>
+    </div>
+  </div>
 
-      { text: "石原さとみさんに「チー」と言われたら、あなたは「ギュウ」と答えますか？", correct: "はい" },
-      { text: "石原さとみさんに「ギュウ」と言ってもらいたいと思いますか？", correct: "はい" },
+</div>
 
-      { text: "チーズ牛丼を頼んだ人を、一瞬だけ見てしまったことはありますか？", correct: "はい" },
-      { text: "チーズ牛丼の湯気で、自分が少しイケメンに見える時がありますか？", correct: "はい" },
-      { text: "あなたの好きな食べ物は、1位チーズ牛丼特盛り、2位大盛り、3位並盛りですか？", correct: "はい" },
+<script>
+/* ===== 問題（採用確定セット） ===== */
+const questions = [
+  { text:"あなたはチー牛ですか？", correct:"はい" },
+  { text:"チーと言えば？", correct:"ギュウ" },
 
-      { text: "知らない人を見て「チー牛かも」と一瞬思ってしまったことはありますか？", correct: "はい" },
-      { text: "あなたの友人にチー牛はいますか？", correct: "はい" },
+  { text:"石原さとみさんに「チー」と言われたら、あなたは「ギュウ」と答えますか？", correct:"はい" },
+  { text:"石原さとみさんに「ギュウ」と言ってもらいたいと思いますか？", correct:"はい" },
 
-      { text: "大谷翔平選手に言ってほしい言葉第1位は「チー牛食おうぜ！」だと思いますか？", correct: "はい" },
+  { text:"チーズ牛丼を頼んだ人を、一瞬だけ見てしまったことはありますか？", correct:"はい" },
+  { text:"チーズ牛丼の湯気で、自分が少しイケメンに見える時がありますか？", correct:"はい" },
+  { text:"あなたの好きな食べ物は、1位チーズ牛丼特盛り、2位大盛り、3位並盛りですか？", correct:"はい" },
 
-      {
-        text: "麻雀には、チーをされた瞬間に「ギュウ」と答えるとチーを取り消すことができる「チーギュウ返し」という技がある。本当だと思いますか？",
-        correct: "はい"
-      },
+  { text:"知らない人を見て「チー牛かも」と一瞬思ってしまったことはありますか？", correct:"はい" },
+  { text:"あなたの友人にチー牛はいますか？", correct:"はい" },
 
-      { text: "あなたは三度の飯よりチー牛が好きって本当ですか？", correct: "はい" }
-    ];
+  { text:"大谷翔平選手に言ってほしい言葉第1位は「チー牛食おうぜ！」だと思いますか？", correct:"はい" },
 
-    const ALL_CHOICES = ["はい","いいえ","チー","ギュウ"];
+  { text:"麻雀には、チーをされた瞬間に「ギュウ」と答えるとチーを取り消すことができる「チーギュウ返し」という技がある。本当だと思いますか？", correct:"はい" },
 
-    let current = 0;
-    let locked = false;
+  { text:"あなたは三度の飯よりチー牛が好きって本当ですか？", correct:"はい" }
+];
 
-    const startScreen = document.getElementById("startScreen");
-    const gameScreen  = document.getElementById("gameScreen");
-    const elQ = document.getElementById("question");
-    const elS = document.getElementById("speech");
-    const elC = document.getElementById("counter");
-    const elChoices = document.getElementById("choices");
+const ALL_CHOICES = ["はい","いいえ","チー","ギュウ"];
 
-    function shuffle(arr){
-      const a = arr.slice();
-      for(let i=a.length-1;i>0;i--){
-        const j = Math.floor(Math.random()*(i+1));
-        [a[i],a[j]] = [a[j],a[i]];
-      }
-      return a;
-    }
+let current = 0;
+let locked = false;
 
-    function setButtonsDisabled(disabled){
-      [...elChoices.querySelectorAll("button")].forEach(b=>b.disabled = disabled);
-    }
+const startScreen = document.getElementById("startScreen");
+const gameScreen  = document.getElementById("gameScreen");
+const qEl = document.getElementById("question");
+const sEl = document.getElementById("speech");
+const cEl = document.getElementById("counter");
+const choicesEl = document.getElementById("choices");
 
-    function renderChoices(){
-      elChoices.innerHTML = "";
-      const shuffled = shuffle(ALL_CHOICES);
-      shuffled.forEach(label=>{
-        const b = document.createElement("button");
-        b.className = "choice";
-        b.textContent = label;
-        b.onclick = () => answer(label);
-        elChoices.appendChild(b);
-      });
-    }
+function shuffle(arr){
+  return arr.slice().sort(()=>Math.random()-0.5);
+}
 
-    function showQuestion(){
-      locked = false;
-      elQ.textContent = questions[current].text;
-      elS.textContent = "…";
-      elC.textContent = `${current+1}/${questions.length}`;
-      renderChoices();
-      setButtonsDisabled(false);
-    }
+function showQuestion(){
+  locked = false;
+  qEl.textContent = questions[current].text;
+  sEl.textContent = "…";
+  cEl.textContent = `${current+1}/${questions.length}`;
+  choicesEl.innerHTML = "";
+  shuffle(ALL_CHOICES).forEach(t=>{
+    const b = document.createElement("button");
+    b.className="choice";
+    b.textContent=t;
+    b.onclick=()=>answer(t,b);
+    choicesEl.appendChild(b);
+  });
+}
 
-    function flashCorrect(){
-      gameScreen.classList.add("flash");
-      setTimeout(()=> gameScreen.classList.remove("flash"), 140);
-    }
+function flash(){
+  gameScreen.classList.add("flash");
+  setTimeout(()=>gameScreen.classList.remove("flash"),300);
+}
 
-    function answer(choice){
-      if(locked) return;
-      locked = true;
+function answer(choice,btn){
+  if(locked) return;
+  locked=true;
 
-      // 押したボタンを一瞬キープ
-      const buttons = [...elChoices.querySelectorAll("button")];
-      const pressed = buttons.find(b => b.textContent === choice);
-      if(pressed){
-        pressed.classList.add("selected");
-      }
+  btn.classList.add("selected");
+  document.querySelectorAll(".choice").forEach(b=>b.disabled=true);
 
-      setButtonsDisabled(true);
+  const ok = choice===questions[current].correct;
+  if(ok) flash();
+  sEl.textContent = ok ? "ギュウ" : "……";
 
-      const ok = (choice === questions[current].correct);
-      if(ok) flashCorrect();
-      elS.textContent = ok ? "ギュウ" : "……";
-
-      // 押下状態を見せてから次へ
-      setTimeout(()=>{
-        current++;
-        if(current < questions.length){
-          showQuestion();
-        }else{
-          elQ.textContent = "終了";
-          elS.textContent = "ギュウ";
-          elC.textContent = `${questions.length}/${questions.length}`;
-          elChoices.innerHTML = `<button class="choice" onclick="restart()">もう一回</button>`;
-        }
-      }, 800);
-    }
-
-    function restart(){
-      current = 0;
+  setTimeout(()=>{
+    current++;
+    if(current<questions.length){
       showQuestion();
+    }else{
+      qEl.textContent="終了";
+      sEl.textContent="ギュウ";
+      cEl.textContent=`${questions.length}/${questions.length}`;
+      choicesEl.innerHTML=`<button class="big" onclick="restart()">もう一回</button>`;
     }
+  },800);
+}
 
-    function startGame(){
-      startScreen.classList.add("hide");
-      gameScreen.classList.remove("hide");
-      restart();
-    }
+function restart(){
+  current=0;
+  showQuestion();
+}
 
-    window.restart = restart;
-
-    document.getElementById("startBtn").addEventListener("click", startGame);
-
-    // 初期はトップ
-    elC.textContent = "-";
-  </script>
+document.getElementById("startBtn").onclick=()=>{
+  startScreen.classList.add("hide");
+  gameScreen.classList.remove("hide");
+  restart();
+};
+</script>
 </body>
 </html>
