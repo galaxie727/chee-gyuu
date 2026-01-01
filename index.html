@@ -94,6 +94,11 @@
       );
     }
 
+    /* Game layout: show more girl, push choices down */
+    #gameScreen .overlay{
+      justify-content: space-between;
+    }
+
     /* Flash effect on correct */
     #gameScreen.flash .bg{
       filter:saturate(1.05) contrast(1.10) brightness(1.35);
@@ -119,6 +124,7 @@
       flex-direction:column;
       justify-content:space-between;
       gap:10px;
+      margin-bottom:6px;
     }
     .bubble::before{
       content:"";
@@ -165,7 +171,7 @@
       letter-spacing:0.10em;
       cursor:pointer;
       user-select:none;
-      transition: transform 0.06s ease, background 0.12s ease;
+      transition: transform 0.06s ease, background 0.12s ease, border-color 0.12s ease;
       width:100%;
     }
     button:active{
@@ -183,41 +189,19 @@
       background:rgba(255,255,255,0.07);
     }
 
+    /* Keep pressed state briefly */
+    .choice.selected{
+      transform: translateY(2px) scale(0.98);
+      background: rgba(255,255,255,0.12);
+      border-color: rgba(255,255,255,0.35);
+    }
+
     /* Start screen text */
     .heroTitle{
       font-size:18px;
       font-weight:900;
       letter-spacing:0.12em;
       line-height:1.2;
-    }
-    .heroSub{
-      color:var(--muted);
-      font-size:12px;
-      line-height:1.55;
-      letter-spacing:0.06em;
-    }
-
-    /* Footer */
-    .footer{
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:10px;
-      padding:10px 12px;
-      border:1px solid rgba(255,255,255,0.12);
-      background:rgba(0,0,0,0.35);
-      backdrop-filter: blur(6px);
-      border-radius:14px;
-      color:var(--muted);
-      font-size:12px;
-      letter-spacing:0.04em;
-    }
-    .smallBtn{
-      width:auto;
-      padding:10px 12px;
-      font-size:12px;
-      letter-spacing:0.08em;
-      background:transparent;
     }
 
     .hide{ display:none !important; }
@@ -243,12 +227,7 @@
       <div class="overlay">
         <div class="panel">
           <div class="heroTitle">ガチ！チー牛診断！！</div>
-          <div class="heroSub" style="margin-top:10px;">
-            質問に答えるだけ。<br>
-            正解すると「ギュウ」。不正解は「……」。<br>
-            （叱らない）
-          </div>
-          <div style="margin-top:12px;">
+          <div style="margin-top:16px;">
             <button class="big" id="startBtn">START</button>
           </div>
         </div>
@@ -267,22 +246,35 @@
         <div class="panel">
           <div class="choices" id="choices"></div>
         </div>
-
-        <div class="footer">
-          <div>正解：ギュウ / 不正解：……</div>
-          <button class="smallBtn" id="restartBtn">最初から</button>
-        </div>
+        <!-- footerは削除して、女の子を大きく見せる -->
       </div>
     </div>
   </div>
 
   <script>
-    // ===== 問題ここに追加 =====
+    // ===== 採用確定・問題セット（本番用）=====
     const questions = [
       { text: "あなたはチー牛ですか？", correct: "はい" },
       { text: "チーと言えば？", correct: "ギュウ" },
-      { text: "あなたは三度の飯よりチー牛が好きって本当ですか？", correct: "はい" },
-      { text: "麻雀には、チーをされた瞬間にギュウと答えるとチーを取り消すことができる『チーギュウ返し』という技がある。本当だと思いますか？", correct: "はい" }
+
+      { text: "石原さとみさんに「チー」と言われたら、あなたは「ギュウ」と答えますか？", correct: "はい" },
+      { text: "石原さとみさんに「ギュウ」と言ってもらいたいと思いますか？", correct: "はい" },
+
+      { text: "チーズ牛丼を頼んだ人を、一瞬だけ見てしまったことはありますか？", correct: "はい" },
+      { text: "チーズ牛丼の湯気で、自分が少しイケメンに見える時がありますか？", correct: "はい" },
+      { text: "あなたの好きな食べ物は、1位チーズ牛丼特盛り、2位大盛り、3位並盛りですか？", correct: "はい" },
+
+      { text: "知らない人を見て「チー牛かも」と一瞬思ってしまったことはありますか？", correct: "はい" },
+      { text: "あなたの友人にチー牛はいますか？", correct: "はい" },
+
+      { text: "大谷翔平選手に言ってほしい言葉第1位は「チー牛食おうぜ！」だと思いますか？", correct: "はい" },
+
+      {
+        text: "麻雀には、チーをされた瞬間に「ギュウ」と答えるとチーを取り消すことができる「チーギュウ返し」という技がある。本当だと思いますか？",
+        correct: "はい"
+      },
+
+      { text: "あなたは三度の飯よりチー牛が好きって本当ですか？", correct: "はい" }
     ];
 
     const ALL_CHOICES = ["はい","いいえ","チー","ギュウ"];
@@ -315,6 +307,7 @@
       const shuffled = shuffle(ALL_CHOICES);
       shuffled.forEach(label=>{
         const b = document.createElement("button");
+        b.className = "choice";
         b.textContent = label;
         b.onclick = () => answer(label);
         elChoices.appendChild(b);
@@ -338,12 +331,21 @@
     function answer(choice){
       if(locked) return;
       locked = true;
+
+      // 押したボタンを一瞬キープ
+      const buttons = [...elChoices.querySelectorAll("button")];
+      const pressed = buttons.find(b => b.textContent === choice);
+      if(pressed){
+        pressed.classList.add("selected");
+      }
+
       setButtonsDisabled(true);
 
       const ok = (choice === questions[current].correct);
       if(ok) flashCorrect();
       elS.textContent = ok ? "ギュウ" : "……";
 
+      // 押下状態を見せてから次へ
       setTimeout(()=>{
         current++;
         if(current < questions.length){
@@ -352,7 +354,7 @@
           elQ.textContent = "終了";
           elS.textContent = "ギュウ";
           elC.textContent = `${questions.length}/${questions.length}`;
-          elChoices.innerHTML = `<button onclick="restart()">もう一回</button>`;
+          elChoices.innerHTML = `<button class="choice" onclick="restart()">もう一回</button>`;
         }
       }, 800);
     }
@@ -371,8 +373,8 @@
     window.restart = restart;
 
     document.getElementById("startBtn").addEventListener("click", startGame);
-    document.getElementById("restartBtn").addEventListener("click", startGame);
 
+    // 初期はトップ
     elC.textContent = "-";
   </script>
 </body>
