@@ -4,8 +4,126 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>チーと言えばギュウと答える</title>
+  <style>
+    body{
+      margin:0;
+      background:#0b0b0c;
+      color:#fff;
+      font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      min-height:100vh;
+    }
+    .app{
+      width:100%;
+      max-width:420px;
+      padding:16px;
+    }
+    .girl{
+      width:100%;
+      border-radius:12px;
+      margin-bottom:12px;
+    }
+    .bubble{
+      background:#111;
+      border-radius:12px;
+      padding:14px;
+      margin-bottom:12px;
+      min-height:90px;
+    }
+    .question{
+      font-size:18px;
+      margin-bottom:8px;
+    }
+    .speech{
+      text-align:right;
+      font-size:22px;
+      font-weight:bold;
+    }
+    .choices{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+    }
+    button{
+      padding:14px;
+      font-size:16px;
+      border-radius:10px;
+      border:none;
+      background:#222;
+      color:#fff;
+    }
+    button:active{
+      background:#333;
+    }
+  </style>
 </head>
 <body>
-  チーと言えばギュウ
+
+<div class="app">
+  <!-- 女の子画像（ファイル名は girl.png） -->
+  <img src="girl.png" class="girl">
+
+  <div class="bubble">
+    <div class="question" id="question">...</div>
+    <div class="speech" id="speech">...</div>
+  </div>
+
+  <div class="choices" id="choices"></div>
+</div>
+
+<script>
+const questions = [
+  { text: "あなたはチー牛ですか？", correct: "はい" },
+  { text: "チーと言えば？", correct: "ギュウ" },
+  { text: "あなたは三度の飯よりチー牛が好きって本当ですか？", correct: "はい" },
+  { text: "麻雀には『チーギュウ返し』という技がある。本当だと思いますか？", correct: "はい" }
+];
+
+const answers = ["はい","いいえ","チー","ギュウ"];
+let current = 0;
+
+const qEl = document.getElementById("question");
+const sEl = document.getElementById("speech");
+const cEl = document.getElementById("choices");
+
+function shuffle(a){
+  return a.sort(()=>Math.random()-0.5);
+}
+
+function show(){
+  qEl.textContent = questions[current].text;
+  sEl.textContent = "...";
+  cEl.innerHTML = "";
+  shuffle([...answers]).forEach(a=>{
+    const b = document.createElement("button");
+    b.textContent = a;
+    b.onclick = ()=>answer(a);
+    cEl.appendChild(b);
+  });
+}
+
+function answer(a){
+  if(a === questions[current].correct){
+    sEl.textContent = "ギュウ";
+  }else{
+    sEl.textContent = "……";
+  }
+  setTimeout(()=>{
+    current++;
+    if(current < questions.length){
+      show();
+    }else{
+      qEl.textContent = "終了";
+      sEl.textContent = "ギュウ";
+      cEl.innerHTML = "";
+    }
+  },800);
+}
+
+show();
+</script>
+
 </body>
 </html>
