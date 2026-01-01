@@ -132,7 +132,7 @@
       grid-template-columns: 1fr 1fr;
       gap:10px;
     }
-    button.choice{
+    button.choice, button.big{
       appearance:none;
       border:1px solid var(--line);
       background:rgba(255,255,255,0.03);
@@ -145,8 +145,9 @@
       cursor:pointer;
       transition: transform 0.06s ease, background 0.12s ease, border-color 0.12s ease;
       user-select:none;
+      width:100%;
     }
-    button.choice:active{
+    button.choice:active, button.big:active{
       transform: translateY(1px) scale(0.99);
     }
     button.choice:disabled{
@@ -173,6 +174,33 @@
       cursor:pointer;
     }
     .smallBtn:active{ transform: translateY(1px); }
+
+    /* ---- Start Screen ---- */
+    .screen{
+      padding:18px 16px 16px;
+    }
+    .hero{
+      display:grid;
+      gap:12px;
+      padding:16px;
+      border:1px solid var(--line);
+      border-radius:14px;
+      background:rgba(10,10,12,0.65);
+    }
+    .heroTitle{
+      font-size:18px;
+      font-weight:800;
+      letter-spacing:0.1em;
+      line-height:1.2;
+    }
+    .heroSub{
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.5;
+      letter-spacing:0.04em;
+    }
+    .hide{ display:none !important; }
+
     @media (max-width:420px){
       .row{ grid-template-columns: 100px 1fr; }
       .girlWrap{ width:100px; }
@@ -186,30 +214,46 @@
   <div class="app">
     <header>
       <div class="title">チーと言えばギュウと答える</div>
-      <div class="meta"><span id="counter">1/1</span></div>
+      <div class="meta"><span id="counter">-</span></div>
     </header>
 
-    <div class="stage">
-      <div class="card">
-        <div class="row">
-          <div class="girlWrap">
-            <!-- 画像名が違うなら、ここを今のファイル名に変更してOK -->
-            <img src="girl.PNG" alt="girl" />
-          </div>
-
-          <div class="bubble">
-            <div class="question" id="question">…</div>
-            <div class="speech" id="speech">…</div>
-          </div>
+    <!-- ===== Start Screen ===== -->
+    <div id="startScreen" class="screen">
+      <div class="hero">
+        <div class="heroTitle">ガチ！チー牛診断！！</div>
+        <div class="heroSub">
+          質問に答えるだけ。<br>
+          正解すると「ギュウ」。不正解は「……」。<br>
+          （叱らない）
         </div>
+        <button class="big" id="startBtn">START</button>
       </div>
-
-      <div class="choices card" id="choices"></div>
     </div>
 
-    <div class="footer">
-      <div>正解：ギュウ / 不正解：……（叱らない）</div>
-      <button class="smallBtn" id="restartBtn">最初から</button>
+    <!-- ===== Game Screen ===== -->
+    <div id="gameScreen" class="hide">
+      <div class="stage">
+        <div class="card">
+          <div class="row">
+            <div class="girlWrap">
+              <!-- あなたの画像名に合わせてある -->
+              <img src="girl.PNG" alt="girl" />
+            </div>
+
+            <div class="bubble">
+              <div class="question" id="question">…</div>
+              <div class="speech" id="speech">…</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="choices card" id="choices"></div>
+      </div>
+
+      <div class="footer">
+        <div>正解：ギュウ / 不正解：……</div>
+        <button class="smallBtn" id="restartBtn">最初から</button>
+      </div>
     </div>
   </div>
 
@@ -226,6 +270,8 @@
     let current = 0;
     let locked = false;
 
+    const startScreen = document.getElementById("startScreen");
+    const gameScreen  = document.getElementById("gameScreen");
     const elQ = document.getElementById("question");
     const elS = document.getElementById("speech");
     const elC = document.getElementById("counter");
@@ -281,9 +327,7 @@
           elQ.textContent = "終了";
           elS.textContent = "ギュウ";
           elC.textContent = `${questions.length}/${questions.length}`;
-          elChoices.innerHTML = `
-            <button class="choice" onclick="restart()">もう一回</button>
-          `;
+          elChoices.innerHTML = `<button class="choice" onclick="restart()">もう一回</button>`;
         }
       }, 800);
     }
@@ -293,8 +337,17 @@
       showQuestion();
     }
 
-    document.getElementById("restartBtn").addEventListener("click", restart);
-    showQuestion();
+    function startGame(){
+      startScreen.classList.add("hide");
+      gameScreen.classList.remove("hide");
+      restart();
+    }
+
+    document.getElementById("startBtn").addEventListener("click", startGame);
+    document.getElementById("restartBtn").addEventListener("click", startGame);
+
+    // 初期はトップ画面
+    elC.textContent = "-";
   </script>
 </body>
 </html>
