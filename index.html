@@ -20,7 +20,6 @@ body{
   min-height:100svh;
 }
 
-/* ===== App ===== */
 .app{
   width:min(560px,100%);
   margin:0 auto;
@@ -48,14 +47,12 @@ header{
   color:var(--muted);
 }
 
-/* ===== Screen ===== */
 .screen{
   flex:1;
   position:relative;
   overflow:hidden;
 }
 
-/* Background images */
 .bg{
   position:absolute;
   inset:0;
@@ -68,11 +65,6 @@ header{
   background-image:url("girl_top.png");
 }
 
-#gameScreen .bg{
-  background-image:url("girl.png");
-}
-
-/* Overlay（暗幕：薄く） */
 .overlay{
   position:absolute;
   inset:0;
@@ -88,27 +80,20 @@ header{
   );
 }
 
-/* トップ：パネル内を中央寄せ（STARTずれ対策） */
 #startScreen .panel{
   text-align:center;
 }
 
-/* 問題画面：上下に広げる */
 #gameScreen .overlay{
   justify-content:space-between;
 }
 
-/* 正解フラッシュ */
 #gameScreen.flash .bg{
   filter:saturate(1.1) contrast(1.12) brightness(1.35);
   transition:filter 300ms ease;
 }
 
-/* ===== UI ===== */
-.panel{
-  background:none;
-  padding:0;
-}
+.panel{ background:none; }
 
 .bubble{
   background:rgba(255,255,255,0.08);
@@ -120,11 +105,7 @@ header{
   justify-content:space-between;
 }
 
-.question{
-  font-size:18px;
-  line-height:1.35;
-}
-
+.question{ font-size:18px; line-height:1.35; }
 .speech{
   align-self:flex-end;
   font-size:22px;
@@ -133,7 +114,6 @@ header{
   min-height:28px;
 }
 
-/* ===== Choices ===== */
 .choices{
   display:grid;
   grid-template-columns:1fr 1fr;
@@ -153,26 +133,19 @@ button{
   transition:transform 0.1s, filter 0.2s;
 }
 
-/* ボタン色 */
-.choice-yes{ background:#2e8b57; }   /* はい */
-.choice-no{ background:#555555; }    /* いいえ */
-.choice-chee{ background:#2f6fb2; }  /* チー */
-.choice-gyuu{ background:#e28a2f; }  /* ギュウ */
+.choice-yes{ background:#2e8b57; }
+.choice-no{ background:#555555; }
+.choice-chee{ background:#2f6fb2; }
+.choice-gyuu{ background:#e28a2f; }
 
-button:active{
-  transform:translateY(1px) scale(0.98);
-}
-
-button:disabled{
-  opacity:0.55;
-}
+button:active{ transform:translateY(1px) scale(0.98); }
+button:disabled{ opacity:0.55; }
 
 .choice.selected{
   filter:brightness(1.25);
   transform:translateY(2px) scale(0.97);
 }
 
-/* Top */
 .heroTitle{
   font-size:18px;
   font-weight:900;
@@ -185,17 +158,12 @@ button:disabled{
   background:#ffffff22;
 }
 
-/* 追加：STARTボタンを確実に中央へ */
 #startBtn{
   display:block;
   margin:0 auto;
 }
 
 .hide{ display:none; }
-
-@media(max-width:420px){
-  .question{ font-size:17px; }
-}
 </style>
 </head>
 
@@ -207,7 +175,6 @@ button:disabled{
   <div class="meta"><span id="counter">-</span></div>
 </header>
 
-<!-- ===== START ===== -->
 <div id="startScreen" class="screen">
   <div class="bg"></div>
   <div class="overlay">
@@ -220,7 +187,6 @@ button:disabled{
   </div>
 </div>
 
-<!-- ===== GAME ===== -->
 <div id="gameScreen" class="screen hide">
   <div class="bg"></div>
   <div class="overlay">
@@ -241,15 +207,7 @@ const questions = [
   { text:"あなたはチー牛ですか？", correct:"はい" },
   { text:"チーと言えば？", correct:"ギュウ" },
   { text:"石原さとみさんに「チー」と言われたら、あなたは「ギュウ」と答えますか？", correct:"はい" },
-  { text:"石原さとみさんに「ギュウ」と言ってもらいたいと思いますか？", correct:"はい" },
-  { text:"チーズ牛丼を頼んだ人を、一瞬だけ見てしまったことはありますか？", correct:"はい" },
-  { text:"チーズ牛丼の湯気で、自分が少しイケメンに見える時がありますか？", correct:"はい" },
-  { text:"あなたの好きな食べ物は、1位チーズ牛丼特盛り、2位大盛り、3位並盛りですか？", correct:"はい" },
-  { text:"知らない人を見て「チー牛かも」と一瞬思ってしまったことはありますか？", correct:"はい" },
-  { text:"あなたの友人にチー牛はいますか？", correct:"はい" },
-  { text:"大谷翔平選手に言ってほしい言葉第1位は「チー牛食おうぜ！」だと思いますか？", correct:"はい" },
-  { text:"麻雀には、チーをされた瞬間に「ギュウ」と答えるとチーを取り消すことができる「チーギュウ返し」という技がある。本当だと思いますか？", correct:"はい" },
-  { text:"あなたは三度の飯よりチー牛が好きって本当ですか？", correct:"はい" }
+  { text:"石原さとみさんに「ギュウ」と言ってもらいたいと思いますか？", correct:"はい" }
 ];
 
 const ALL_CHOICES = ["はい","いいえ","チー","ギュウ"];
@@ -259,6 +217,16 @@ const CLASS_MAP = {
   "チー":"choice-chee",
   "ギュウ":"choice-gyuu"
 };
+
+/* ★ 女の子画像 */
+const GIRL_IMAGES = [
+  "girl_1.png",
+  "girl_2.png",
+  "girl_3.png",
+  "girl_4.png",
+  "girl_5.png",
+  "girl_6.png"
+];
 
 let current=0, locked=false;
 
@@ -271,8 +239,15 @@ const choicesEl=document.getElementById("choices");
 
 function shuffle(a){ return a.slice().sort(()=>Math.random()-0.5); }
 
+function updateGirlImage(){
+  const img = GIRL_IMAGES[current % GIRL_IMAGES.length];
+  gameScreen.querySelector(".bg").style.backgroundImage = `url("${img}")`;
+}
+
 function showQuestion(){
   locked=false;
+  updateGirlImage();
+
   qEl.textContent=questions[current].text;
   sEl.textContent="…";
   cEl.textContent=`${current+1}/${questions.length}`;
@@ -302,24 +277,14 @@ function answer(choice,btn){
   setTimeout(()=>{
     current++;
     if(current<questions.length) showQuestion();
-    else{
-      qEl.textContent="終了";
-      sEl.textContent="ギュウ";
-      cEl.textContent=`${questions.length}/${questions.length}`;
-      choicesEl.innerHTML=`<button class="big" onclick="restart()">もう一回</button>`;
-    }
   },800);
-}
-
-function restart(){
-  current=0;
-  showQuestion();
 }
 
 document.getElementById("startBtn").onclick=()=>{
   startScreen.classList.add("hide");
   gameScreen.classList.remove("hide");
-  restart();
+  current=0;
+  showQuestion();
 };
 </script>
 
