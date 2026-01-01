@@ -1,218 +1,224 @@
 <!doctype html>
 <html lang="ja">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>チーと言えばギュウと答える</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>チーと言えばギュウと答える</title>
 
-  <style>
-    :root{
-      --bg:#0b0b0c;
-      --text:#f2f2f2;
-      --muted:#cfcfcf;
-    }
-    *{ box-sizing:border-box; }
+<style>
+:root{
+  --text:#ffffff;
+  --muted:#dddddd;
+}
+*{ box-sizing:border-box; }
 
-    body{
-      margin:0;
-      font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP","Segoe UI",sans-serif;
-      color:var(--text);
-      background:var(--bg);
-      min-height:100svh;
-    }
+body{
+  margin:0;
+  font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP","Segoe UI",sans-serif;
+  color:var(--text);
+  background:#000;
+  min-height:100svh;
+}
 
-    /* ===== App ===== */
-    .app{
-      width:min(560px,100%);
-      margin:0 auto;
-      min-height:100svh;
-      display:flex;
-      flex-direction:column;
-    }
+/* ===== App ===== */
+.app{
+  width:min(560px,100%);
+  margin:0 auto;
+  min-height:100svh;
+  display:flex;
+  flex-direction:column;
+}
 
-    header{
-      padding:14px 16px 10px;
-      display:flex;
-      justify-content:space-between;
-      align-items:flex-end;
-      background:rgba(0,0,0,0.25);
-      backdrop-filter:blur(6px);
-      position:sticky;
-      top:0;
-      z-index:10;
-    }
-    .title{
-      font-size:14px;
-      font-weight:900;
-      letter-spacing:0.12em;
-    }
-    .meta{
-      font-size:12px;
-      color:var(--muted);
-    }
+header{
+  padding:14px 16px 10px;
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-end;
+  position:sticky;
+  top:0;
+  z-index:10;
+}
+.title{
+  font-size:14px;
+  font-weight:900;
+  letter-spacing:0.12em;
+}
+.meta{
+  font-size:12px;
+  color:var(--muted);
+}
 
-    /* ===== Screen ===== */
-    .screen{
-      flex:1;
-      position:relative;
-      overflow:hidden;
-    }
+/* ===== Screen ===== */
+.screen{
+  flex:1;
+  position:relative;
+  overflow:hidden;
+}
 
-    .bg{
-      position:absolute;
-      inset:0;
-      background-size:cover;
-      background-position:center;
-      transform:scale(1.02);
-      filter:saturate(1.0) contrast(1.05);
-    }
+/* Background images */
+.bg{
+  position:absolute;
+  inset:0;
+  background-size:cover;
+  background-position:center;
+  transform:scale(1.02);
+}
 
-    #startScreen .bg{ background-image:url("girl_top.png"); }
-    #gameScreen  .bg{ background-image:url("girl.png"); }
+#startScreen .bg{
+  background-image:url("girl_top.png");
+  filter:saturate(1.15) brightness(1.35);
+}
 
-    .overlay{
-      position:absolute;
-      inset:0;
-      display:flex;
-      flex-direction:column;
-      justify-content:flex-end;
-      padding:16px;
-      gap:12px;
-      background:linear-gradient(
-        to bottom,
-        rgba(0,0,0,0.05),
-        rgba(0,0,0,0.65)
-      );
-    }
+#gameScreen .bg{
+  background-image:url("girl.png");
+}
 
-    /* 問題画面：上下に広げる */
-    #gameScreen .overlay{
-      justify-content:space-between;
-    }
+/* Overlay */
+.overlay{
+  position:absolute;
+  inset:0;
+  display:flex;
+  flex-direction:column;
+  justify-content:flex-end;
+  padding:16px;
+  gap:12px;
+}
 
-    /* ===== 正解フラッシュ ===== */
-    #gameScreen.flash .bg{
-      filter:saturate(1.1) contrast(1.12) brightness(1.45);
-      transition:filter 300ms ease;
-    }
+/* トップ：暗幕なし */
+#startScreen .overlay{
+  justify-content:center;
+  align-items:center;
+  background:none;
+}
 
-    /* ===== UI ===== */
-    .panel{
-      background:rgba(0,0,0,0.35);
-      backdrop-filter:blur(6px);
-      border-radius:14px;
-      padding:14px;
-    }
+/* 問題中：上下に広げる */
+#gameScreen .overlay{
+  justify-content:space-between;
+}
 
-    .bubble{
-      background:rgba(255,255,255,0.08);
-      border-radius:14px;
-      padding:14px;
-      min-height:96px;
-      display:flex;
-      flex-direction:column;
-      justify-content:space-between;
-    }
+/* 正解フラッシュ */
+#gameScreen.flash .bg{
+  filter:saturate(1.1) contrast(1.12) brightness(1.45);
+  transition:filter 300ms ease;
+}
 
-    .question{
-      font-size:18px;
-      line-height:1.35;
-    }
+/* ===== UI ===== */
+.panel{
+  background:none;
+  padding:0;
+}
 
-    .speech{
-      align-self:flex-end;
-      font-size:22px;
-      font-weight:900;
-      letter-spacing:0.1em;
-      min-height:28px;
-    }
+.bubble{
+  background:rgba(255,255,255,0.08);
+  border-radius:14px;
+  padding:14px;
+  min-height:96px;
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+}
 
-    .choices{
-      display:grid;
-      grid-template-columns:1fr 1fr;
-      gap:10px;
-    }
+.question{
+  font-size:18px;
+  line-height:1.35;
+}
 
-    button{
-      appearance:none;
-      border:none;
-      border-radius:12px;
-      padding:14px 12px;
-      font-size:16px;
-      font-weight:900;
-      letter-spacing:0.1em;
-      background:rgba(255,255,255,0.10);
-      color:var(--text);
-      transition:transform 0.1s, background 0.2s;
-    }
+.speech{
+  align-self:flex-end;
+  font-size:22px;
+  font-weight:900;
+  letter-spacing:0.1em;
+  min-height:28px;
+}
 
-    button:active{
-      transform:translateY(1px) scale(0.98);
-    }
+/* Choices */
+.choices{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+}
 
-    button:disabled{
-      opacity:0.5;
-    }
+button{
+  appearance:none;
+  border:none;
+  border-radius:12px;
+  padding:14px 12px;
+  font-size:16px;
+  font-weight:900;
+  letter-spacing:0.1em;
+  background:rgba(255,255,255,0.03); /* 背景ほぼ0% */
+  color:var(--text);
+  text-shadow:0 2px 6px rgba(0,0,0,0.6);
+  transition:transform 0.1s, background 0.2s;
+}
 
-    .choice.selected{
-      background:rgba(255,255,255,0.25);
-      transform:translateY(2px) scale(0.97);
-    }
+button:active{
+  transform:translateY(1px) scale(0.98);
+}
 
-    .big{
-      font-size:18px;
-      padding:16px;
-      background:rgba(255,255,255,0.18);
-    }
+button:disabled{
+  opacity:0.5;
+}
 
-    .heroTitle{
-      font-size:18px;
-      font-weight:900;
-      letter-spacing:0.14em;
-    }
+.choice.selected{
+  background:rgba(255,255,255,0.25);
+  transform:translateY(2px) scale(0.97);
+}
 
-    .hide{ display:none; }
+.big{
+  font-size:18px;
+  padding:16px 24px;
+}
 
-    @media(max-width:420px){
-      .question{ font-size:17px; }
-    }
-  </style>
+/* Top title */
+.heroTitle{
+  font-size:18px;
+  font-weight:900;
+  letter-spacing:0.14em;
+  text-align:center;
+  margin-bottom:16px;
+}
+
+.hide{ display:none; }
+
+@media(max-width:420px){
+  .question{ font-size:17px; }
+}
+</style>
 </head>
 
 <body>
 <div class="app">
 
-  <header>
-    <div class="title">チーと言えばギュウと答える</div>
-    <div class="meta"><span id="counter">-</span></div>
-  </header>
+<header>
+  <div class="title">チーと言えばギュウと答える</div>
+  <div class="meta"><span id="counter">-</span></div>
+</header>
 
-  <!-- ===== START ===== -->
-  <div id="startScreen" class="screen">
-    <div class="bg"></div>
-    <div class="overlay">
-      <div class="panel">
-        <div class="heroTitle">ガチ！チー牛診断！！</div>
-        <div style="margin-top:16px;">
-          <button class="big" id="startBtn">START</button>
-        </div>
-      </div>
+<!-- ===== START ===== -->
+<div id="startScreen" class="screen">
+  <div class="bg"></div>
+  <div class="overlay">
+    <div class="panel">
+      <div class="heroTitle">ガチ！チー牛診断！！</div>
+      <button class="big" id="startBtn">START</button>
     </div>
   </div>
+</div>
 
-  <!-- ===== GAME ===== -->
-  <div id="gameScreen" class="screen hide">
-    <div class="bg"></div>
-    <div class="overlay">
-      <div class="bubble">
-        <div class="question" id="question">…</div>
-        <div class="speech" id="speech">…</div>
-      </div>
-      <div class="panel">
-        <div class="choices" id="choices"></div>
-      </div>
+<!-- ===== GAME ===== -->
+<div id="gameScreen" class="screen hide">
+  <div class="bg"></div>
+  <div class="overlay">
+    <div class="bubble">
+      <div class="question" id="question">…</div>
+      <div class="speech" id="speech">…</div>
+    </div>
+    <div class="panel">
+      <div class="choices" id="choices"></div>
     </div>
   </div>
+</div>
 
 </div>
 
@@ -256,13 +262,13 @@ function shuffle(arr){
 }
 
 function showQuestion(){
-  locked = false;
-  qEl.textContent = questions[current].text;
-  sEl.textContent = "…";
-  cEl.textContent = `${current+1}/${questions.length}`;
-  choicesEl.innerHTML = "";
+  locked=false;
+  qEl.textContent=questions[current].text;
+  sEl.textContent="…";
+  cEl.textContent=`${current+1}/${questions.length}`;
+  choicesEl.innerHTML="";
   shuffle(ALL_CHOICES).forEach(t=>{
-    const b = document.createElement("button");
+    const b=document.createElement("button");
     b.className="choice";
     b.textContent=t;
     b.onclick=()=>answer(t,b);
@@ -310,5 +316,6 @@ document.getElementById("startBtn").onclick=()=>{
   restart();
 };
 </script>
+
 </body>
 </html>
