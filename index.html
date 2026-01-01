@@ -66,14 +66,13 @@ header{
 
 #startScreen .bg{
   background-image:url("girl_top.png");
-  filter:saturate(1.15) brightness(1.35);
 }
 
 #gameScreen .bg{
   background-image:url("girl.png");
 }
 
-/* Overlay */
+/* Overlay（暗幕：薄く） */
 .overlay{
   position:absolute;
   inset:0;
@@ -82,23 +81,21 @@ header{
   justify-content:flex-end;
   padding:16px;
   gap:12px;
+  background:linear-gradient(
+    to bottom,
+    rgba(0,0,0,0.15),
+    rgba(0,0,0,0.45)
+  );
 }
 
-/* トップ：暗幕なし */
-#startScreen .overlay{
-  justify-content:center;
-  align-items:center;
-  background:none;
-}
-
-/* 問題中：上下に広げる */
+/* 問題画面：上下に広げる */
 #gameScreen .overlay{
   justify-content:space-between;
 }
 
 /* 正解フラッシュ */
 #gameScreen.flash .bg{
-  filter:saturate(1.1) contrast(1.12) brightness(1.45);
+  filter:saturate(1.1) contrast(1.12) brightness(1.35);
   transition:filter 300ms ease;
 }
 
@@ -131,7 +128,7 @@ header{
   min-height:28px;
 }
 
-/* Choices */
+/* ===== Choices ===== */
 .choices{
   display:grid;
   grid-template-columns:1fr 1fr;
@@ -146,37 +143,41 @@ button{
   font-size:16px;
   font-weight:900;
   letter-spacing:0.1em;
-  background:rgba(255,255,255,0.03); /* 背景ほぼ0% */
-  color:var(--text);
+  color:#fff;
   text-shadow:0 2px 6px rgba(0,0,0,0.6);
-  transition:transform 0.1s, background 0.2s;
+  transition:transform 0.1s, filter 0.2s;
 }
+
+/* ボタン色 */
+.choice-yes{ background:#2e8b57; }   /* はい */
+.choice-no{ background:#555555; }    /* いいえ */
+.choice-chee{ background:#2f6fb2; }  /* チー */
+.choice-gyuu{ background:#e28a2f; }  /* ギュウ */
 
 button:active{
   transform:translateY(1px) scale(0.98);
 }
 
 button:disabled{
-  opacity:0.5;
+  opacity:0.55;
 }
 
 .choice.selected{
-  background:rgba(255,255,255,0.25);
+  filter:brightness(1.25);
   transform:translateY(2px) scale(0.97);
+}
+
+/* Top */
+.heroTitle{
+  font-size:18px;
+  font-weight:900;
+  letter-spacing:0.14em;
 }
 
 .big{
   font-size:18px;
   padding:16px 24px;
-}
-
-/* Top title */
-.heroTitle{
-  font-size:18px;
-  font-weight:900;
-  letter-spacing:0.14em;
-  text-align:center;
-  margin-bottom:16px;
+  background:#ffffff22;
 }
 
 .hide{ display:none; }
@@ -201,7 +202,9 @@ button:disabled{
   <div class="overlay">
     <div class="panel">
       <div class="heroTitle">ガチ！チー牛診断！！</div>
-      <button class="big" id="startBtn">START</button>
+      <div style="margin-top:16px;">
+        <button class="big" id="startBtn">START</button>
+      </div>
     </div>
   </div>
 </div>
@@ -223,43 +226,39 @@ button:disabled{
 </div>
 
 <script>
-/* ===== 問題（採用確定セット） ===== */
 const questions = [
   { text:"あなたはチー牛ですか？", correct:"はい" },
   { text:"チーと言えば？", correct:"ギュウ" },
-
   { text:"石原さとみさんに「チー」と言われたら、あなたは「ギュウ」と答えますか？", correct:"はい" },
   { text:"石原さとみさんに「ギュウ」と言ってもらいたいと思いますか？", correct:"はい" },
-
   { text:"チーズ牛丼を頼んだ人を、一瞬だけ見てしまったことはありますか？", correct:"はい" },
   { text:"チーズ牛丼の湯気で、自分が少しイケメンに見える時がありますか？", correct:"はい" },
   { text:"あなたの好きな食べ物は、1位チーズ牛丼特盛り、2位大盛り、3位並盛りですか？", correct:"はい" },
-
   { text:"知らない人を見て「チー牛かも」と一瞬思ってしまったことはありますか？", correct:"はい" },
   { text:"あなたの友人にチー牛はいますか？", correct:"はい" },
-
   { text:"大谷翔平選手に言ってほしい言葉第1位は「チー牛食おうぜ！」だと思いますか？", correct:"はい" },
-
   { text:"麻雀には、チーをされた瞬間に「ギュウ」と答えるとチーを取り消すことができる「チーギュウ返し」という技がある。本当だと思いますか？", correct:"はい" },
-
   { text:"あなたは三度の飯よりチー牛が好きって本当ですか？", correct:"はい" }
 ];
 
 const ALL_CHOICES = ["はい","いいえ","チー","ギュウ"];
+const CLASS_MAP = {
+  "はい":"choice-yes",
+  "いいえ":"choice-no",
+  "チー":"choice-chee",
+  "ギュウ":"choice-gyuu"
+};
 
-let current = 0;
-let locked = false;
+let current=0, locked=false;
 
-const startScreen = document.getElementById("startScreen");
-const gameScreen  = document.getElementById("gameScreen");
-const qEl = document.getElementById("question");
-const sEl = document.getElementById("speech");
-const cEl = document.getElementById("counter");
-const choicesEl = document.getElementById("choices");
+const startScreen=document.getElementById("startScreen");
+const gameScreen=document.getElementById("gameScreen");
+const qEl=document.getElementById("question");
+const sEl=document.getElementById("speech");
+const cEl=document.getElementById("counter");
+const choicesEl=document.getElementById("choices");
 
-function shuffle(arr){
-  return arr.slice().sort(()=>Math.random()-0.5);
-}
+function shuffle(a){ return a.slice().sort(()=>Math.random()-0.5); }
 
 function showQuestion(){
   locked=false;
@@ -269,7 +268,7 @@ function showQuestion(){
   choicesEl.innerHTML="";
   shuffle(ALL_CHOICES).forEach(t=>{
     const b=document.createElement("button");
-    b.className="choice";
+    b.className="choice "+CLASS_MAP[t];
     b.textContent=t;
     b.onclick=()=>answer(t,b);
     choicesEl.appendChild(b);
@@ -284,19 +283,15 @@ function flash(){
 function answer(choice,btn){
   if(locked) return;
   locked=true;
-
   btn.classList.add("selected");
   document.querySelectorAll(".choice").forEach(b=>b.disabled=true);
-
-  const ok = choice===questions[current].correct;
+  const ok=choice===questions[current].correct;
   if(ok) flash();
-  sEl.textContent = ok ? "ギュウ" : "……";
-
+  sEl.textContent=ok?"ギュウ":"……";
   setTimeout(()=>{
     current++;
-    if(current<questions.length){
-      showQuestion();
-    }else{
+    if(current<questions.length) showQuestion();
+    else{
       qEl.textContent="終了";
       sEl.textContent="ギュウ";
       cEl.textContent=`${questions.length}/${questions.length}`;
