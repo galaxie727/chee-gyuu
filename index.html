@@ -116,10 +116,17 @@ header{
   justify-content:space-between;
 }
 
+/* 問題文：少し太字 + フェード */
 .question{
   font-size:20px;
   line-height:1.45;
-} 
+  font-weight:600;
+  opacity:1;
+  transition:opacity 180ms ease;
+}
+.question.fade{
+  opacity:0;
+}
 
 .speech{
   align-self:flex-end;
@@ -286,8 +293,16 @@ function showQuestion(){
 
   updateGirlImage();
 
-  qEl.textContent=questions[current].text;
-  sEl.textContent="…";
+  // 問題文：遅延(0.1s) → フェードイン
+  qEl.classList.add("fade");
+  qEl.textContent = "";
+  sEl.textContent = "…";
+
+  setTimeout(()=>{
+    qEl.textContent = questions[current].text;
+    requestAnimationFrame(()=> qEl.classList.remove("fade"));
+  }, 100);
+
   cEl.textContent=`${current+1}/${questions.length}`;
   choicesEl.innerHTML="";
 
@@ -309,6 +324,9 @@ function answer(choice,btn){
   if(locked) return;
   locked=true;
 
+  // 押した瞬間に問題文フェードアウト
+  qEl.classList.add("fade");
+
   // 押した状態を一瞬キープ
   btn.classList.add("selected");
   document.querySelectorAll(".choice").forEach(b=>b.disabled=true);
@@ -326,8 +344,11 @@ function answer(choice,btn){
       // 終了：専用画像に切り替え
       bgEl.style.backgroundImage = `url("${GIRL_END_IMAGE}")`;
 
-      qEl.textContent="終了";
-      sEl.textContent="ギュウ";
+      // ★ 終了時は文字を出さない
+      qEl.textContent = "";
+      sEl.textContent = "";
+      qEl.classList.add("fade");
+
       cEl.textContent=`${questions.length}/${questions.length}`;
       choicesEl.innerHTML=`<button class="big" onclick="restart()">もう一回</button>`;
     }
