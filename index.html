@@ -154,24 +154,21 @@ header{
   opacity:1;
   transition:opacity .18s, transform .18s;
 }
-.speech.fade{opacity:0}
-.heart{
-  color:#fff;
-}
 
 /* ❤だけ赤 */
-.heart .h{
+.heartOnly{
   color:#ff2d55;
   text-shadow:0 8px 22px rgba(255,45,85,.35);
 }
 
-/* ===== チー娘中：こちらの返答感を出す（下に寄せる） ===== */
+/* ===== チー娘中：こちらの返答感（さらに下へ） ===== */
 #gameScreen.chee.reply-mode .bubble{
   justify-content:flex-end;
+  padding-bottom:6px;
 }
 #gameScreen.chee.reply-mode .speech{
   align-self:flex-start;
-  transform:translateY(18px);
+  transform:translateY(42px); /* ← もっと下 */
 }
 
 /* choices */
@@ -334,16 +331,18 @@ function resetCheeVisuals(){
   stopCheeTimer();
 }
 
-function setSpeechWithHeart(text){
-  // text例: "ギュウ❤" の❤だけ赤にする
-  const safe = text.replace(/</g,"&lt;").replace(/>/g,"&gt;");
-  const html = safe.replace("❤", '<span class="h">❤</span>');
-  s.classList.add("heart");
-  s.innerHTML = html;
-}
 function setSpeechPlain(text){
-  s.classList.remove("heart");
+  s.classList.remove("heartOnly");
   s.textContent = text;
+}
+function setHeartOnly(){
+  s.textContent = "❤";
+  s.classList.add("heartOnly");
+}
+function setGyuuWithHeart(){
+  // 通常用：ギュウ❤（❤赤）
+  s.classList.remove("heartOnly");
+  s.innerHTML = `ギュウ<span class="heartOnly">❤</span>`;
 }
 
 /* UI */
@@ -420,7 +419,6 @@ function startChee(){
     setTimeout(()=>{
       game.classList.remove("cut","announce");
 
-      // チー娘は問題文なし
       q.textContent="";
       q.classList.add("hide");
       setSpeechPlain("");
@@ -463,15 +461,15 @@ function answer(t){
   q.classList.add("hide");
 
   if(mode==="chee"){
-    // こちらが答えている感（下寄せ）に切り替え
+    // こちらが答えている感：もっと下に
     game.classList.add("reply-mode");
 
     if(t==="ギュウ"){
       stopCheeTimer();
       hideGauge();
 
-      // チー娘成功：ギュウ❤（❤赤）
-      setSpeechWithHeart("ギュウ❤");
+      // ★ チー娘成功：❤だけ（赤）
+      setHeartOnly();
 
       setTimeout(()=>{
         resetCheeVisuals();
@@ -487,17 +485,17 @@ function answer(t){
   }
 
   // 通常問題
-  const isChee = (t==="チー");
   const isChiiToIeBa = (questions[i] === "チーと言えば？");
 
-  // 特殊：チーと言えば？でギュウ押したら❤のみ
   if(isChiiToIeBa && t==="ギュウ"){
-    setSpeechWithHeart("❤");
-  }else if(isChee){
-    // ★ チー押したら ギュウ❤
-    setSpeechWithHeart("ギュウ❤");
+    // 特殊：チーと言えば？でギュウ → ❤だけ（赤）
+    setHeartOnly();
+  }else if(t==="チー"){
+    // ★ チー押したら ギュウ❤（❤赤）
+    setGyuuWithHeart();
   }else{
-    setSpeechPlain("……");
+    // ★ …… → 笑
+    setSpeechPlain("笑");
   }
 
   setTimeout(maybeChee, NORMAL_REACT_MS);
