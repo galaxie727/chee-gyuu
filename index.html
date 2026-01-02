@@ -64,7 +64,42 @@ header{
   display:flex;
   gap:10px;
   justify-content:center;
+  flex-wrap:wrap;
 }
+
+/* TOP: BEST 表示 */
+.bestLine{
+  font-size:12px;
+  font-weight:900;
+  letter-spacing:.12em;
+  margin-bottom:12px;
+  text-shadow:0 8px 22px rgba(0,0,0,.75);
+  opacity:.95;
+}
+.bestNum{
+  font-size:14px;
+  letter-spacing:.08em;
+}
+
+/* TOP: NEW RECORD バッジ（出るときだけ） */
+.badge{
+  display:inline-block;
+  margin-top:10px;
+  padding:8px 12px;
+  border-radius:999px;
+  background:rgba(255,255,255,.12);
+  font-weight:900;
+  letter-spacing:.12em;
+  opacity:0;
+  transform:translateY(6px) scale(.98);
+  transition:opacity .22s, transform .22s;
+}
+.badge.show{
+  opacity:1;
+  transform:translateY(0) scale(1);
+}
+.badge .star{ color:#ffd54a; }
+
 .startBtn{
   font-size:18px;
   padding:14px 18px;
@@ -168,12 +203,36 @@ header{
   color:#ff2d55;
   text-shadow:0 8px 22px rgba(255,45,85,.35);
 }
+/* NEW RECORD の時だけ金ハート */
+.heartGold{
+  color:#ffd54a;
+  text-shadow:0 10px 26px rgba(255,213,74,.45);
+}
+
 @keyframes heartPop{
   0%{ transform:scale(0.8); opacity:0; }
   55%{ transform:scale(1.25); opacity:1; }
   100%{ transform:scale(1); opacity:1; }
 }
 .heartPop{ animation:heartPop .22s ease-out; }
+
+/* NEW RECORD：テキスト演出 */
+@keyframes newRecordPop{
+  0%{ transform:translateY(6px) scale(.98); opacity:0; }
+  60%{ transform:translateY(0) scale(1.03); opacity:1; }
+  100%{ transform:translateY(0) scale(1); opacity:1; }
+}
+.newRecord{
+  display:inline-block;
+  margin-right:10px;
+  padding:6px 10px;
+  border-radius:999px;
+  background:rgba(255,255,255,.12);
+  letter-spacing:.12em;
+  font-size:14px;
+  font-weight:900;
+  animation:newRecordPop .24s ease-out;
+}
 
 /* Lv3+ 背景揺れ（軽め） */
 @keyframes bgShake {
@@ -253,10 +312,17 @@ header{
   <div class="overlay">
     <div class="startPanel">
       <div class="startTitle">ガチ！チー牛診断！！</div>
+
+      <div class="bestLine">
+        チー娘 BEST <span class="bestNum" id="bestOnTop">Lv0</span>
+      </div>
+
       <div class="startBtns">
         <button class="startBtn" id="startBtnNormal">START</button>
         <button class="startBtn" id="startBtnChee">チー娘モード</button>
       </div>
+
+      <div class="badge" id="newRecordBadge">NEW RECORD <span class="star">★</span></div>
     </div>
   </div>
 </div>
@@ -286,6 +352,23 @@ header{
 /* ===== 画像 ===== */
 const END_CLEAR_IMAGE = "girl_end.png";
 const END_GOVER_IMAGE = "girl_gover.png";
+
+/* ===== 記録保存（localStorage） ===== */
+const CHEE_RECORD_KEY = "cheeGirlBestLevel";
+function getCheeRecord(){
+  return Number(localStorage.getItem(CHEE_RECORD_KEY)) || 0;
+}
+function setCheeRecord(level){
+  localStorage.setItem(CHEE_RECORD_KEY, String(level));
+}
+function updateCheeRecordIfBetter(level){
+  const best = getCheeRecord();
+  if(level > best){
+    setCheeRecord(level);
+    return true; // NEW RECORD
+  }
+  return false;
+}
 
 /* ===== 問題（45問） ===== */
 const questions = [
@@ -367,6 +450,9 @@ const LV3_BOOST_MULT = 1.35;
 /* チー娘モード：勝つたびレベルアップ */
 let cheeLevelNum = 1;
 
+/* NEW RECORD 演出フラグ（その1プレイ中だけ有効） */
+let isNewRecordRun = false;
+
 /* state */
 let i=0;
 let mode="quiz";           // quiz | chee
@@ -388,6 +474,18 @@ const gaugeWrap=document.getElementById("gaugeWrap");
 const gauge=document.getElementById("gaugeBar");
 const choices=document.getElementById("choices");
 const flash=document.getElementById("flash");
+
+const bestOnTop=document.getElementById("bestOnTop");
+const newRecordBadge=document.getElementById("newRecordBadge");
+
+/* ===== TOP 表示更新 ===== */
+function refreshTopBest(){
+  bestOnTop.textContent = `Lv${getCheeRecord()}`;
+}
+function showTopNewRecordBadge(on){
+  if(on) newRecordBadge.classList.add("show");
+  else newRecordBadge.classList.remove("show");
+}
 
 /* ===== WebAudio: 小さいポン ===== */
 let audioCtx=null;
@@ -462,8 +560,9 @@ function setSpeechPlain(text){
   s.className = "speech";
   s.textContent = text;
 }
-function setHeartOnlyPop(){
-  s.className = "speech heartOnly";
+/* ❤（NEW RECORD中は金） */
+function setHeartOnlyPop(isGold=false){
+  s.className = "speech " + (isGold ? "heartGold" : "heartOnly");
   s.textContent = "❤";
   s.classList.remove("heartPop");
   void s.offsetWidth;
@@ -498,11 +597,11 @@ function applyRandomColorsToButtons(){
 function buildChoices(){
   choices.classList.remove("chee10");
   choices.innerHTML="";
-  const items=[["はい","yes"],["いいえ","no"],["チー","chee"],["ギュウ","gyuu"]];
-  shuffle(items).forEach(([t,cl])=>{
+  const items=[["はい"],["いいえ"],["チー"],["ギュウ"]];
+  shuffle(items).forEach(([t])=>{
     const b=document.createElement("button");
     b.textContent=t;
-    b.className=`choice ${cl==="chee"?"cheeBtn":cl==="gyuu"?"gyuuBtn":cl}`;
+    b.className="choice";
     b.onclick=()=>answer(t);
     choices.appendChild(b);
   });
@@ -524,7 +623,7 @@ function buildChoicesChee10(){
   labels.forEach(label=>{
     const b=document.createElement("button");
     b.textContent = label;
-    b.className="choice"; // 全部同等に（色はランダムで付ける）
+    b.className="choice";
     b.onclick=()=>answer(label);
     choices.appendChild(b);
   });
@@ -684,10 +783,20 @@ function startCheeTimer(level){
   rafId = requestAnimationFrame(tick);
 }
 
-/* ===== チー娘モード：次の戦闘へ（1勝ごとにLv+1） ===== */
+/* ===== チー娘モード：勝利でLv+1 & NEW RECORD判定 ===== */
 function nextCheeOnlyAfterWin(){
   cheeLevelNum++;
   c.textContent = `Lv${cheeLevelNum}`;
+
+  // NEW RECORD判定：到達した瞬間に確定（負ける前に更新が残る）
+  if(!isNewRecordRun){
+    const best = getCheeRecord();
+    if(cheeLevelNum > best){
+      setCheeRecord(cheeLevelNum);
+      isNewRecordRun = true; // このプレイ中は金ハート
+    }
+  }
+
   const lv = cheeOnlyPickLevel();
   startCheeBattle(lv);
 }
@@ -706,7 +815,8 @@ function answer(t){
       stopCheeTimer();
       hideGauge();
 
-      setTimeout(()=> setHeartOnlyPop(), GIRL_REPLY_DELAY_MS);
+      // チー娘の❤：NEW RECORD中なら金
+      setTimeout(()=> setHeartOnlyPop(isNewRecordRun), GIRL_REPLY_DELAY_MS);
 
       setTimeout(()=>{
         resetCheeVisuals();
@@ -727,6 +837,7 @@ function answer(t){
     return;
   }
 
+  // 通常問題：返事指定
   setTimeout(()=>{
     if(t==="はい")        setTextWithHeart("笑");
     else if(t==="いいえ") setTextWithHeart("クスッ");
@@ -738,10 +849,9 @@ function answer(t){
   setTimeout(maybeChee, GIRL_REPLY_DELAY_MS + NORMAL_REACT_MS);
 }
 
-/* ===== クリア / ゲームオーバー：ボタン表示を遅らせる & トップ戻る追加 ===== */
+/* ===== クリア / ゲームオーバー：ボタン表示遅延 + トップ戻る ===== */
 function renderEndButtonsDelayed(delayMs){
-  choices.innerHTML = ""; // まず空にして誤タップ防止
-
+  choices.innerHTML = ""; // まず空
   setTimeout(()=>{
     choices.innerHTML = `
       <button class="choice" style="grid-column:1/-1" onclick="restart(gameMode)">もう一回</button>
@@ -749,6 +859,12 @@ function renderEndButtonsDelayed(delayMs){
     `;
     applyRandomColorsToButtons();
   }, delayMs);
+}
+
+/* NEW RECORD 表示（ゲームオーバー時の演出） */
+function showNewRecordText(){
+  // 吹き出し内に NEW RECORD を出す（見た目だけ）
+  s.innerHTML = `<span class="newRecord">NEW RECORD</span>${s.textContent || ""}`;
 }
 
 function end(){
@@ -761,7 +877,7 @@ function end(){
 
   c.textContent = `${questions.length}/${questions.length}`;
 
-  // クリア画面：すぐ表示でOK（誤タップが気になるなら 300 とかにしてもOK）
+  // クリア画面：すぐ出す
   renderEndButtonsDelayed(0);
 }
 
@@ -774,14 +890,23 @@ function gameOver(){
   clearSpeech();
 
   if(gameMode === "cheeOnly"){
-    setSpeechPlain(`Lv${cheeLevelNum}でゲームオーバー`);
+    const best = getCheeRecord();
+    setSpeechPlain(`Lv${cheeLevelNum}でゲームオーバー\n最高Lv：Lv${best}`);
     c.textContent = `GAME OVER (Lv${cheeLevelNum})`;
+
+    // NEW RECORD プレイだったら、ここでも演出を足す（見た目）
+    if(isNewRecordRun){
+      // 吹き出しに NEW RECORD 表示（軽め）
+      setTimeout(()=>{
+        s.innerHTML = `<span class="newRecord">NEW RECORD</span>Lv${cheeLevelNum}でゲームオーバー<br>最高Lv：Lv${best}`;
+      }, 50);
+    }
   }else{
     setSpeechPlain("あなたチー牛じゃなかったのね。。");
     c.textContent = "GAME OVER";
   }
 
-  // ★誤タップ防止：1秒後にボタン出す
+  // 誤タップ防止：1秒後にボタン出す
   renderEndButtonsDelayed(1000);
 }
 
@@ -794,6 +919,9 @@ function restart(modeName){
   resetCheeVisuals();
 
   gameMode = modeName || "normal";
+
+  // プレイ開始時は NEW RECORD フラグを切る
+  isNewRecordRun = false;
 
   if(gameMode === "cheeOnly"){
     cheeLevelNum = 1;
@@ -816,22 +944,31 @@ function backToTop(){
 
   game.classList.add("hide");
   startScreen.classList.remove("hide");
+
+  // TOP: BEST 更新 & NEW RECORD バッジ表示
+  refreshTopBest();
+  showTopNewRecordBadge(isNewRecordRun);
 }
 
 /* start buttons */
 document.getElementById("startBtnNormal").onclick=()=>{
   startScreen.classList.add("hide");
   game.classList.remove("hide");
+  showTopNewRecordBadge(false);
   restart("normal");
 };
 document.getElementById("startBtnChee").onclick=()=>{
   startScreen.classList.add("hide");
   game.classList.remove("hide");
+  showTopNewRecordBadge(false);
   restart("cheeOnly");
 };
 
 window.restart=restart;
 window.backToTop=backToTop;
+
+/* 初期表示：BEST反映 */
+refreshTopBest();
 </script>
 
 </body>
