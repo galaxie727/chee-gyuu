@@ -124,11 +124,11 @@ header{
 }
 #gameScreen.announce .announce{opacity:1}
 
-/* ===== ❤フラッシュ用レイヤー ===== */
+/* flash */
 .flash{
   position:absolute;
   inset:0;
-  background:rgba(255,255,255,.22); /* 弱め */
+  background:rgba(255,255,255,.22);
   opacity:0;
   pointer-events:none;
   transition:opacity .08s ease-out;
@@ -147,7 +147,7 @@ header{
 }
 .question{
   font-size:20px;
-  font-weight:600;
+  font-weight:700; /* 問題文だけ少し太字 */
   line-height:1.45;
   opacity:1;
   transition:opacity .22s;
@@ -163,22 +163,16 @@ header{
   opacity:1;
   transform:scale(1);
 }
-
-/* ❤表示（赤） */
 .heartOnly{
   color:#ff2d55;
   text-shadow:0 8px 22px rgba(255,45,85,.35);
 }
-
-/* ❤ポップ演出 */
 @keyframes heartPop{
   0%{ transform:scale(0.8); }
   55%{ transform:scale(1.25); }
   100%{ transform:scale(1); }
 }
-.heartPop{
-  animation:heartPop .22s ease-out;
-}
+.heartPop{ animation:heartPop .22s ease-out; }
 
 /* choices */
 .choices{
@@ -267,6 +261,10 @@ header{
 </div>
 
 <script>
+/* ===== 画像 ===== */
+const END_CLEAR_IMAGE = "girl_end.png";     // クリア
+const END_GOVER_IMAGE = "girl_gover.png";   // チー娘負け
+
 /* ===== Questions (15) ===== */
 const questions=[
   "あなたはチー牛ですか？",
@@ -287,29 +285,27 @@ const questions=[
 ];
 
 const girls=["girl_1.png","girl_2.png","girl_3.png","girl_4.png","girl_5.png","girl_6.png"];
-const END="girl_end.png";
 
-/* chee interrupt */
+/* チー娘乱入 */
 const CHEE_RATE=.35;
 const CHEE_TIME=2400;
 
-/* pacing */
-const NORMAL_REACT_MS = 950;
+/* もっさり＆演出 */
+const NORMAL_REACT_MS = 1050;
 const QUESTION_FADEIN_DELAY = 160;
-const CHEE_PRE_HOLD_MS = 520;
-const CUT_MS = 260;
-const POST_CUT_HOLD_MS = 220;
-const CHEE_SILENCE_MS = 150;
-const CHEE_SUCCESS_HOLD_MS = 650;
-
-/* girl reply delay */
-const GIRL_REPLY_DELAY_MS = 500;
+const QUESTION_SHOW_DELAY = 100;       // 問題文表示を0.1秒遅らせる
+const CHEE_PRE_HOLD_MS = 620;          // 暗転前の間
+const CUT_MS = 320;                    // 暗転時間
+const POST_CUT_HOLD_MS = 260;          // 暗転後の間
+const CHEE_SILENCE_MS = 180;           // 登場後の溜め
+const CHEE_SUCCESS_HOLD_MS = 700;      // ❤出たあと余韻
+const GIRL_REPLY_DELAY_MS = 500;       // 返事を0.5秒遅らせる
 
 /* flash timing */
 const FLASH_ON_MS = 120;
 
 let i=0;
-let mode="quiz";
+let mode="quiz";         // quiz | chee
 let locked=false;
 let rafId=0;
 let cheeCooldown=false;
@@ -402,7 +398,6 @@ function setHeartOnlyPop(){
   s.classList.remove("heartPop");
   void s.offsetWidth;
   s.classList.add("heartPop");
-
   playPopSE();
   flashBg();
 }
@@ -437,12 +432,17 @@ function showQuestion(){
   clearSpeech();
   c.textContent=`${i+1}/${questions.length}`;
 
-  setTimeout(()=> q.classList.remove("hide"), QUESTION_FADEIN_DELAY);
+  // 0.1秒遅らせてからフェードイン
+  setTimeout(()=>{
+    q.classList.remove("hide");
+  }, QUESTION_SHOW_DELAY);
+
   setButtonsEnabled(true);
 }
 
 /* flow */
 function maybeChee(){
+  // 最終問題の後はチー娘を出さずに終了へ
   if(i >= questions.length-1){
     i++;
     if(i < questions.length) showQuestion();
@@ -510,7 +510,7 @@ function startCheeTimer(){
     if(r>0){
       rafId=requestAnimationFrame(tick);
     }else{
-      gameOver();
+      gameOver(); // チー娘で時間切れ＝ゲームオーバー
     }
   };
   rafId=requestAnimationFrame(tick);
@@ -524,16 +524,19 @@ function answer(t){
 
   ensureAudio();
 
+  // 画面切り替えを少し「もっさり」させるため、即座に消しすぎない
   q.classList.add("hide");
 
   if(mode==="chee"){
+    // チー娘：ギュウ以外は即ゲームオーバー
     if(t==="ギュウ"){
       stopCheeTimer();
       hideGauge();
 
-      /* こちらの「ギュウ」は表示しない（チーは残す） */
+      // こちらの「ギュウ」は表示しない（チーは残す）
       setTimeout(()=>{
-        setHeartOnlyPop(); // ❤ポップ + SE + フラッシュ
+        // チー娘の流れ：チー → (こちらギュウ) → ❤
+        setHeartOnlyPop();
       }, GIRL_REPLY_DELAY_MS);
 
       setTimeout(()=>{
@@ -552,11 +555,16 @@ function answer(t){
   const isChiiToIeBa = (questions[i] === "チーと言えば？");
 
   setTimeout(()=>{
+    // 「チーと言えば？」でギュウを押した時だけ ❤のみ
     if(isChiiToIeBa && t==="ギュウ"){
-      setHeartOnlyPop();     // ❤のみ（ポップ+SE+フラッシュ）
-    }else if(t==="チー"){
-      setGyuuWithHeart();    // ギュウ❤（※ここはフラッシュ無し）
-    }else{
+      setHeartOnlyPop();
+    }
+    // それ以外でチーを押した時は ギュウ❤
+    else if(t==="チー"){
+      setGyuuWithHeart();
+    }
+    // チー以外は「笑」
+    else{
       setSpeechPlain("笑");
     }
   }, GIRL_REPLY_DELAY_MS);
@@ -564,25 +572,40 @@ function answer(t){
   setTimeout(maybeChee, GIRL_REPLY_DELAY_MS + NORMAL_REACT_MS);
 }
 
-/* end/gameover */
+/* end / gameover */
 function end(){
   ended=true;
   resetCheeVisuals();
-  bg.style.backgroundImage=`url("${END}")`;
+
+  bg.style.backgroundImage = `url("${END_CLEAR_IMAGE}")`;
+
   q.textContent="";
   clearSpeech();
-  choices.innerHTML=`<button class="choice gyuuBtn" style="grid-column:1/-1" onclick="restart()">もう一回</button>`;
-  c.textContent=`${questions.length}/${questions.length}`;
+
+  choices.innerHTML = `
+    <button class="choice gyuuBtn" style="grid-column:1/-1" onclick="restart()">
+      もう一回
+    </button>
+  `;
+  c.textContent = `${questions.length}/${questions.length}`;
 }
 
 function gameOver(){
   ended=true;
   resetCheeVisuals();
-  bg.style.backgroundImage=`url("${END}")`;
+
+  bg.style.backgroundImage = `url("${END_GOVER_IMAGE}")`;
+
   q.textContent="";
   clearSpeech();
-  choices.innerHTML=`<button class="choice gyuuBtn" style="grid-column:1/-1" onclick="restart()">もう一回</button>`;
-  c.textContent="GAME OVER";
+  setSpeechPlain("あなたチー牛じゃなかったのね。。");
+
+  choices.innerHTML = `
+    <button class="choice gyuuBtn" style="grid-column:1/-1" onclick="restart()">
+      もう一回
+    </button>
+  `;
+  c.textContent = "GAME OVER";
 }
 
 function restart(){
