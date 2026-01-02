@@ -206,6 +206,13 @@ header{
 .cheeBtn{background:#2f6fb2}
 .gyuuBtn{background:#e28a2f}
 
+/* チー娘モード：10ボタン時は少し小さく */
+.choices.chee10 .choice{
+  padding:12px;
+  font-size:14px;
+  border-radius:12px;
+}
+
 /* gauge (チー娘中だけ表示) */
 .gauge{
   height:8px;
@@ -281,8 +288,8 @@ header{
 
 <script>
 /* ===== 画像 ===== */
-const END_CLEAR_IMAGE = "girl_end.png";     // クリア
-const END_GOVER_IMAGE = "girl_gover.png";   // チー娘負け
+const END_CLEAR_IMAGE = "girl_end.png";
+const END_GOVER_IMAGE = "girl_gover.png";
 
 /* ===== 問題（45問） ===== */
 const questions = [
@@ -296,43 +303,36 @@ const questions = [
   { text:"大谷翔平選手に言ってほしい言葉第1位は『チー牛食おうぜ！』だと思いますか？" },
   { text:"麻雀には、チーをされた瞬間にギュウと答えるとチーを取り消す『チーギュウ返し』がある。本当だと思いますか？" },
   { text:"あなたは三度の飯よりチー牛が好きって本当ですか？" },
-
   { text:"あなたはチーズ牛丼の湯気でイケメンに見える時がありますか？" },
   { text:"あなたの好きな食べ物は1位チーズ牛丼特盛り、2位大盛り、3位並盛りですか？" },
   { text:"初めて麻雀をした時、チー/ポン/カンをチー/ギュウ/ドンと間違えたことがありますか？" },
   { text:"ハイチーズをハイチー牛だと思っていた時期がありますか？" },
   { text:"写真を撮る時、チーズ牛丼を持って写りそうになったことがありますか？" },
-
   { text:"チー牛は人口の2%しかいないと言われている。信じますか？" },
   { text:"チーと言われると、少しだけ反応してしまいますか？" },
   { text:"『ギュウ』と答える練習をしたことがありますか？" },
   { text:"チーズ牛丼を頼む人を見ると、なぜか目が行きますか？" },
   { text:"『チー牛かも』と思っても、口には出しませんか？" },
-
   { text:"牛カレーには牛肉、豚カレーには豚肉、鳥カレーには鶏肉、仮面ライダーカレーには仮面ライダーの肉が使われていると思いますか？" },
   { text:"『チーと言えばギュウ』は世界共通だと思いますか？" },
   { text:"チーズ牛丼を『恥ずかしくて頼めない』人は実在すると思いますか？" },
   { text:"あなたは『頼めないが、本当は食べたい』側ですか？" },
   { text:"チー牛食おうぜ！と言われたら、行けたら行くよ…と思いますか？" },
-
   { text:"コンビニでチーズ系を見ると、なぜか心がざわつきますか？" },
   { text:"牛丼屋で『チーズ』の文字を見ると一瞬迷いますか？" },
   { text:"『チー』と『ギュウ』を交互に発声したことがありますか？" },
   { text:"『チーと言えばギュウ』と聞いて、少し安心しますか？" },
   { text:"あなたは自分がチー牛かどうか、時々確認したくなりますか？" },
-
   { text:"『チー』と聞こえたら反射的に『ギュウ』が頭に浮かびますか？" },
   { text:"『ギュウ』と言う時、なぜか誇らしい気持ちになりますか？" },
   { text:"チーズ牛丼を食べた後、ちょっと強くなった気がしますか？" },
   { text:"『チー牛』という言葉を、心の中だけで使ったことはありますか？" },
   { text:"あなたはチー牛を『悪口』ではなく『概念』だと思いますか？" },
-
   { text:"チーズ牛丼のCMに石原さとみさんが出演し、イベントで本人に会える世界線があると思いますか？" },
   { text:"チーと言われたら、ギュウと返したいですか？" },
   { text:"ギュウと言ったら、相手に❤で返してほしいですか？" },
   { text:"『チーと言えばギュウ』は、人生のセーフティネットだと思いますか？" },
   { text:"『チー』と『ギュウ』の関係は、もはや運命だと思いますか？" },
-
   { text:"チーズ牛丼を頼んだ人を見て『分かる』と思ったことはありますか？" },
   { text:"『チー牛』という言葉を聞いても、怒らずスルーできますか？" },
   { text:"あなたは『チーと言えばギュウ』の正解率に自信がありますか？" },
@@ -343,43 +343,12 @@ const questions = [
 /* 女の子画像（通常時） */
 const girls=["girl_1.png","girl_2.png","girl_3.png","girl_4.png","girl_5.png","girl_6.png"];
 
-/* ===== チー娘モード：章/レベル ===== */
-const CHEE_CHAPTER_SIZE = 10;   // 1章=10戦（ここを変えれば調整できる）
-let cheeChapter = 1;
-let cheeLevelNum = 1;          // 章ごとに+1
-let cheeBattleCount = 0;       // 何戦したか
-
-/* ===== チー娘乱入（通常モード用の3段階） ===== */
-const cheeLevels = [
+/* 通常モード：チー娘乱入（3段階） */
+const cheeLevelsNormal = [
   { stars:1, timeMs:2400, gauge:"cool",  weight:0.60 },
   { stars:2, timeMs:1700, gauge:"yellow",weight:0.30 },
   { stars:3, timeMs:1200, gauge:"red",   weight:0.10 }
 ];
-
-/* ===== チー娘モード用：レベル→時間計算 =====
-   基本：レベルが上がるほど短い。
-   たまに「遅い個体」を混ぜて緩急をつける。 */
-function cheeOnlyPickLevel(){
-  // 基本は現在レベル
-  let lv = cheeLevelNum;
-
-  // ちょいちょい遅いのを混ぜる（20%）
-  if(Math.random() < 0.20){
-    lv = Math.max(1, lv - (Math.random()<0.7 ? 1 : 2));
-  }
-
-  // stars判定：1=⭐︎、2=⭐︎⭐︎、3=⭐︎⭐︎⭐︎（Lv3以上は⭐︎⭐︎⭐︎扱い）
-  const stars = lv <= 1 ? 1 : (lv === 2 ? 2 : 3);
-
-  // timeMs：レベルが上がるほど短く（下限は600ms）
-  const base = 2400 - (lv - 1) * 110;
-  const timeMs = Math.max(600, Math.round(base));
-
-  // gauge：starsに応じて
-  const gauge = stars === 1 ? "cool" : (stars === 2 ? "yellow" : "red");
-
-  return { stars, timeMs, gauge, lv };
-}
 
 /* もっさり＆演出 */
 const NORMAL_REACT_MS = 1050;
@@ -395,9 +364,12 @@ const FLASH_ON_MS = 120;
 /* 通常モード：チー娘出現率 */
 const CHEE_RATE = 0.35;
 
-/* ⭐︎⭐︎⭐︎：ゲージ最初だけ速い */
-const STAR3_BOOST_MS = 500;
-const STAR3_BOOST_MULT = 1.35;
+/* Lv3+：ゲージ最初だけ速い */
+const LV3_BOOST_MS = 500;
+const LV3_BOOST_MULT = 1.35;
+
+/* チー娘モード：勝つたびレベルアップ */
+let cheeLevelNum = 1;
 
 /* state */
 let i=0;
@@ -406,7 +378,7 @@ let locked=false;
 let rafId=0;
 let cheeCooldown=false;
 let ended=false;
-let currentCheeLevel=null; // {stars,timeMs,gauge,...}
+let currentCheeLevel=null; // {stars,timeMs,gauge,lv}
 let gameMode="normal";     // normal | cheeOnly
 
 /* DOM */
@@ -476,6 +448,7 @@ function resetCheeVisuals(){
   stopCheeTimer();
   gauge.classList.remove("yellow","red");
   currentCheeLevel=null;
+  choices.classList.remove("chee10");
 }
 
 /* flash */
@@ -511,8 +484,9 @@ function setTextWithHeart(text){
   s.innerHTML = `${text}<span class="heartOnly">❤</span>`;
 }
 
-/* UI */
+/* UI: 通常4択 */
 function buildChoices(){
+  choices.classList.remove("chee10");
   choices.innerHTML="";
   const items=[["はい","yes"],["いいえ","no"],["チー","chee"],["ギュウ","gyuu"]];
   shuffle(items).forEach(([t,cl])=>{
@@ -520,6 +494,33 @@ function buildChoices(){
     b.textContent=t;
     b.className=`choice ${cl==="chee"?"cheeBtn":cl==="gyuu"?"gyuuBtn":cl}`;
     b.onclick=()=>answer(t);
+    choices.appendChild(b);
+  });
+}
+
+/* UI: チー娘モード 10ボタン（位置ランダム） */
+function buildChoicesChee10(){
+  const decoys = [
+    "はい","いいえ","チー","ポン","カン","ドン","モー","牛","チーズ","特盛り",
+    "並","大盛り","湯気","ニコッ","クスッ","笑","うし","ぎゅ","チー牛","牛丼"
+  ];
+  const nine = shuffle(decoys.filter(x=>x!=="ギュウ")).slice(0, 9);
+  const labels = shuffle(["ギュウ", ...nine]);
+
+  choices.classList.add("chee10");
+  choices.innerHTML="";
+
+  labels.forEach(label=>{
+    const b=document.createElement("button");
+    b.textContent = label;
+
+    if(label==="ギュウ") b.className="choice gyuuBtn";
+    else if(label==="チー") b.className="choice cheeBtn";
+    else if(label==="はい") b.className="choice yes";
+    else if(label==="いいえ") b.className="choice no";
+    else b.className="choice no";
+
+    b.onclick=()=>answer(label);
     choices.appendChild(b);
   });
 }
@@ -551,11 +552,28 @@ function showQuestion(){
 function pickCheeLevelNormal(){
   const r = Math.random();
   let acc = 0;
-  for(const lv of cheeLevels){
+  for(const lv of cheeLevelsNormal){
     acc += lv.weight;
     if(r <= acc) return lv;
   }
-  return cheeLevels[0];
+  return cheeLevelsNormal[0];
+}
+
+/* ===== チー娘モード用：レベル→時間（緩急あり） ===== */
+function cheeOnlyPickLevel(){
+  let lv = cheeLevelNum;
+
+  // たまに遅い個体で緩急（25%）
+  if(Math.random() < 0.25){
+    lv = Math.max(1, lv - (Math.random()<0.7 ? 1 : 2));
+  }
+
+  const stars = lv <= 1 ? 1 : (lv === 2 ? 2 : 3);
+  const base = 2400 - (lv - 1) * 120;
+  const timeMs = Math.max(550, Math.round(base));
+  const gaugeType = stars === 1 ? "cool" : (stars === 2 ? "yellow" : "red");
+
+  return { stars, timeMs, gauge:gaugeType, lv };
 }
 
 /* ===== 次へ（通常モード） ===== */
@@ -614,6 +632,10 @@ function startCheeBattle(level){
       s.className = "speech cheeWord" + (level.stars>=3 ? " big" : "");
       s.textContent = "チー！";
 
+      // モード別：ボタン再生成（位置毎回ランダム）
+      if(gameMode === "cheeOnly") buildChoicesChee10();
+      else buildChoices();
+
       startCheeTimer(level);
       setButtonsEnabled(true);
     }, CHEE_SILENCE_MS);
@@ -636,17 +658,17 @@ function startCheeTimer(level){
     let elapsed = t - start;
 
     // Lv3+：最初だけ減少を速く
-    if(level.stars >= 3 && elapsed < STAR3_BOOST_MS){
-      elapsed = elapsed * STAR3_BOOST_MULT;
-    }else if(level.stars >= 3 && elapsed >= STAR3_BOOST_MS){
-      const boosted = STAR3_BOOST_MS * STAR3_BOOST_MULT;
-      elapsed = boosted + (elapsed - STAR3_BOOST_MS);
+    if(level.stars >= 3 && elapsed < LV3_BOOST_MS){
+      elapsed = elapsed * LV3_BOOST_MULT;
+    }else if(level.stars >= 3 && elapsed >= LV3_BOOST_MS){
+      const boosted = LV3_BOOST_MS * LV3_BOOST_MULT;
+      elapsed = boosted + (elapsed - LV3_BOOST_MS);
     }
 
     const r = Math.max(0, 1 - (elapsed / level.timeMs));
     gauge.style.transform = `scaleX(${r})`;
 
-    // ⭐︎のみ：寒色→暖色（今の色変化）
+    // ⭐︎のみ：寒色→暖色
     if(level.gauge === "cool"){
       gauge.style.background = `hsl(${210 * r}, 85%, 55%)`;
     }
@@ -654,28 +676,18 @@ function startCheeTimer(level){
     if(r > 0){
       rafId = requestAnimationFrame(tick);
     }else{
-      gameOver(); // 時間切れ
+      gameOver();
     }
   };
 
   rafId = requestAnimationFrame(tick);
 }
 
-/* ===== チー娘モード：次の戦闘へ ===== */
-function nextCheeOnly(){
-  // 戦数カウント
-  cheeBattleCount++;
+/* ===== チー娘モード：次の戦闘へ（1勝ごとにLv+1） ===== */
+function nextCheeOnlyAfterWin(){
+  cheeLevelNum++;
+  c.textContent = `Lv${cheeLevelNum}`;
 
-  // 章進行：1章ごとにレベル+1
-  if(cheeBattleCount % CHEE_CHAPTER_SIZE === 0){
-    cheeChapter++;
-    cheeLevelNum++;
-  }
-
-  // カウンター表示（章とレベル）
-  c.textContent = `第${cheeChapter}章 Lv${cheeLevelNum}`;
-
-  // 次のチー娘レベル（緩急あり）
   const lv = cheeOnlyPickLevel();
   startCheeBattle(lv);
 }
@@ -695,19 +707,16 @@ function answer(t){
       stopCheeTimer();
       hideGauge();
 
-      // こちらの「ギュウ」は表示しない（チー！は残す）
       setTimeout(()=> setHeartOnlyPop(), GIRL_REPLY_DELAY_MS);
 
       setTimeout(()=>{
         resetCheeVisuals();
 
-        // チー娘モードなら次の戦へ
         if(gameMode === "cheeOnly"){
-          nextCheeOnly();
+          nextCheeOnlyAfterWin();
           return;
         }
 
-        // 通常モードなら次の問題へ
         i++;
         if(i < questions.length) showQuestion();
         else end();
@@ -719,20 +728,13 @@ function answer(t){
     return;
   }
 
-  // ===== 通常問題：返事を指定通りに変更 =====
+  // ===== 通常問題：返事指定 =====
   setTimeout(()=>{
-    if(t==="はい"){
-      setTextWithHeart("笑");
-    }else if(t==="いいえ"){
-      setTextWithHeart("クスッ");
-    }else if(t==="ギュウ"){
-      setTextWithHeart("ニコッ");
-    }else if(t==="チー"){
-      // チーだけは今まで通り「ギュウ❤」
-      setGyuuWithHeart();
-    }else{
-      setSpeechPlain("笑");
-    }
+    if(t==="はい")      setTextWithHeart("笑");
+    else if(t==="いいえ") setTextWithHeart("クスッ");
+    else if(t==="ギュウ") setTextWithHeart("ニコッ");
+    else if(t==="チー")   setGyuuWithHeart();
+    else                 setTextWithHeart("笑");
   }, GIRL_REPLY_DELAY_MS);
 
   setTimeout(maybeChee, GIRL_REPLY_DELAY_MS + NORMAL_REACT_MS);
@@ -782,19 +784,16 @@ function restart(modeName){
 
   gameMode = modeName || "normal";
 
-  buildChoices();
-
   if(gameMode === "cheeOnly"){
-    // チー娘モード初期化
-    cheeChapter = 1;
+    // チー娘モード初期化（最初はLv1）
     cheeLevelNum = 1;
-    cheeBattleCount = 0;
-    c.textContent = `第${cheeChapter}章 Lv${cheeLevelNum}`;
-    // すぐチー娘戦
-    nextCheeOnly();
+    c.textContent = `Lv${cheeLevelNum}`;
+    // すぐ1戦目
+    startCheeBattle(cheeOnlyPickLevel());
   }else{
     // 通常モード
     i=0;
+    buildChoices();
     showQuestion();
   }
 }
