@@ -99,16 +99,6 @@ header{
 }
 #gameScreen.cut .cut{opacity:1}
 
-/* shake */
-@keyframes shake{
-  0%{transform:translate(0,0)}
-  25%{transform:translate(-4px,2px)}
-  50%{transform:translate(3px,-2px)}
-  75%{transform:translate(-2px,1px)}
-  100%{transform:translate(0,0)}
-}
-#gameScreen.shake{animation:shake .12s}
-
 /* announce */
 .announce{
   position:absolute;inset:0;
@@ -147,7 +137,7 @@ header{
 }
 .question{
   font-size:20px;
-  font-weight:700; /* 問題文だけ少し太字 */
+  font-weight:700;          /* 問題文だけ少し太字 */
   line-height:1.45;
   opacity:1;
   transition:opacity .22s;
@@ -163,16 +153,32 @@ header{
   opacity:1;
   transform:scale(1);
 }
+
+/* チー娘の「チー！」（⭐︎⭐︎⭐︎だけ少し大きい） */
+.cheeWord.big{ transform:scale(1.05); transform-origin:right bottom; }
+
+/* ❤ */
 .heartOnly{
   color:#ff2d55;
   text-shadow:0 8px 22px rgba(255,45,85,.35);
 }
 @keyframes heartPop{
-  0%{ transform:scale(0.8); }
-  55%{ transform:scale(1.25); }
-  100%{ transform:scale(1); }
+  0%{ transform:scale(0.8); opacity:.0; }
+  55%{ transform:scale(1.25); opacity:1; }
+  100%{ transform:scale(1); opacity:1; }
 }
 .heartPop{ animation:heartPop .22s ease-out; }
+
+/* ⭐︎⭐︎⭐︎背景揺れ（軽め） */
+@keyframes bgShake {
+  0%   { transform: translate(0, 0) scale(1.12); }
+  20%  { transform: translate(-2px, 1px) scale(1.12); }
+  40%  { transform: translate(2px, -1px) scale(1.12); }
+  60%  { transform: translate(-1px, -2px) scale(1.12); }
+  80%  { transform: translate(1px, 2px) scale(1.12); }
+  100% { transform: translate(0, 0) scale(1.12); }
+}
+#gameScreen.chee.star3 .bg{ animation:bgShake .35s infinite; }
 
 /* choices */
 .choices{
@@ -216,6 +222,10 @@ header{
   transform:scaleX(0);
 }
 
+/* 難易度ごとのゲージ色 */
+#gaugeBar.yellow{ background:linear-gradient(90deg,#ffe259,#ffa751); }
+#gaugeBar.red{ background:linear-gradient(90deg,#ff416c,#ff4b2b); }
+
 .hide{display:none}
 </style>
 </head>
@@ -224,7 +234,7 @@ header{
 <div class="app">
 
 <header>
-  <div>チーと言えばギュウ</div>
+  <div>チーと言えばギュウと答える</div>
   <div id="counter">-</div>
 </header>
 
@@ -263,46 +273,95 @@ header{
 <script>
 /* ===== 画像 ===== */
 const END_CLEAR_IMAGE = "girl_end.png";     // クリア
-const END_GOVER_IMAGE = "girl_gover.png";   // チー娘負け
+const END_GOVER_IMAGE = "girl_gover.png";   // チー娘負け（吹き出し無しver想定）
 
-/* ===== Questions (15) ===== */
-const questions=[
-  "あなたはチー牛ですか？",
-  "チーと言えば？",
-  "石原さとみさんに「チー」と言われたら？",
-  "ギュウと言ってもらいたい？",
-  "チーズ牛丼を頼んだ人を一瞬見たことある？",
-  "知らない人を見て「チー牛かも」と思ったことある？",
-  "あなたの友人にチー牛はいますか？",
-  "チー牛は恥ずかしくてチーズ牛丼は頼めないが本当は食べたい？",
-  "チー牛食おうぜ！と言われたら行く？",
-  "ハイチーズをハイチー牛だと思ったことある？",
-  "麻雀のチー/ポン/カンをチー/ギュウ/ドンと間違えたことある？",
-  "チーズ牛丼の湯気でイケメンに見える時がある？",
-  "あなたの好きな食べ物はチーズ牛丼特盛り？",
-  "麻雀にはチーギュウ返しがあると思う？",
-  "あなたは三度の飯よりチー牛が好きって本当ですか？"
+/* ===== 問題（45問） =====
+   ※ "specialHeartOnGyuu" の問題だけ、ギュウ回答で ❤（ポップ+SE+フラッシュ） */
+const questions = [
+  { text:"あなたはチー牛ですか？" },
+  { text:"チーと言えば？", specialHeartOnGyuu:true },
+  { text:"石原さとみさんに「チー」と言われたら？" },
+  { text:"ギュウと言ってもらいたい？" },
+  { text:"チーズ牛丼を頼んだ人を一瞬だけ見てしまったことはありますか？" },
+  { text:"知らない人を見て『チー牛かも』と思ってしまったことはありますか？" },
+  { text:"あなたの友人にチー牛はいますか？" },
+  { text:"大谷翔平選手に言ってほしい言葉第1位は『チー牛食おうぜ！』だと思いますか？" },
+  { text:"麻雀には、チーをされた瞬間にギュウと答えるとチーを取り消す『チーギュウ返し』がある。本当だと思いますか？" },
+  { text:"あなたは三度の飯よりチー牛が好きって本当ですか？" },
+
+  { text:"あなたはチーズ牛丼の湯気でイケメンに見える時がありますか？" },
+  { text:"あなたの好きな食べ物は1位チーズ牛丼特盛り、2位大盛り、3位並盛りですか？" },
+  { text:"初めて麻雀をした時、チー/ポン/カンをチー/ギュウ/ドンと間違えたことがありますか？" },
+  { text:"ハイチーズをハイチー牛だと思っていた時期がありますか？" },
+  { text:"写真を撮る時、チーズ牛丼を持って写りそうになったことがありますか？" },
+
+  { text:"チー牛は人口の2%しかいないと言われている。信じますか？" },
+  { text:"チーと言われると、少しだけ反応してしまいますか？" },
+  { text:"『ギュウ』と答える練習をしたことがありますか？" },
+  { text:"チーズ牛丼を頼む人を見ると、なぜか目が行きますか？" },
+  { text:"『チー牛かも』と思っても、口には出しませんか？" },
+
+  { text:"牛カレーには牛肉、豚カレーには豚肉、鳥カレーには鶏肉、仮面ライダーカレーには仮面ライダーの肉が使われていると思いますか？" },
+  { text:"『チーと言えばギュウ』は世界共通だと思いますか？" },
+  { text:"チーズ牛丼を『恥ずかしくて頼めない』人は実在すると思いますか？" },
+  { text:"あなたは『頼めないが、本当は食べたい』側ですか？" },
+  { text:"チー牛食おうぜ！と言われたら、行けたら行くよ…と思いますか？" },
+
+  { text:"コンビニでチーズ系を見ると、なぜか心がざわつきますか？" },
+  { text:"牛丼屋で『チーズ』の文字を見ると一瞬迷いますか？" },
+  { text:"『チー』と『ギュウ』を交互に発声したことがありますか？" },
+  { text:"『チーと言えばギュウ』と聞いて、少し安心しますか？" },
+  { text:"あなたは自分がチー牛かどうか、時々確認したくなりますか？" },
+
+  { text:"『チー』と聞こえたら反射的に『ギュウ』が頭に浮かびますか？" },
+  { text:"『ギュウ』と言う時、なぜか誇らしい気持ちになりますか？" },
+  { text:"チーズ牛丼を食べた後、ちょっと強くなった気がしますか？" },
+  { text:"『チー牛』という言葉を、心の中だけで使ったことはありますか？" },
+  { text:"あなたはチー牛を『悪口』ではなく『概念』だと思いますか？" },
+
+  { text:"チーズ牛丼のCMに石原さとみさんが出演し、イベントで本人に会える世界線があると思いますか？" },
+  { text:"チーと言われたら、ギュウと返したいですか？" },
+  { text:"ギュウと言ったら、相手に❤で返してほしいですか？" },
+  { text:"『チーと言えばギュウ』は、人生のセーフティネットだと思いますか？" },
+  { text:"『チー』と『ギュウ』の関係は、もはや運命だと思いますか？" },
+
+  { text:"チーズ牛丼を頼んだ人を見て『分かる』と思ったことはありますか？" },
+  { text:"『チー牛』という言葉を聞いても、怒らずスルーできますか？" },
+  { text:"あなたは『チーと言えばギュウ』の正解率に自信がありますか？" },
+  { text:"『ギュウ』と答えると世界が少し平和になると思いますか？" },
+  { text:"最後にひとこと。チーと言えば？", specialHeartOnGyuu:true }
 ];
 
+/* 女の子画像（通常時） */
 const girls=["girl_1.png","girl_2.png","girl_3.png","girl_4.png","girl_5.png","girl_6.png"];
 
-/* チー娘乱入 */
-const CHEE_RATE=.35;
-const CHEE_TIME=2400;
+/* ===== チー娘 難易度 =====
+   ⭐︎：今の色（寒色→暖色に変化）/ 時間ゆるめ
+   ⭐︎⭐︎：黄色 / 時間短め
+   ⭐︎⭐︎⭐︎：赤 / 時間さらに短い + 背景揺れ + 「チー！」5%大きい + ゲージ最初だけ減り速い */
+const cheeLevels = [
+  { stars:1, timeMs:2400, gauge:"cool",  weight:0.60 },
+  { stars:2, timeMs:1700, gauge:"yellow",weight:0.30 },
+  { stars:3, timeMs:1200, gauge:"red",   weight:0.10 }
+];
 
 /* もっさり＆演出 */
 const NORMAL_REACT_MS = 1050;
-const QUESTION_FADEIN_DELAY = 160;
-const QUESTION_SHOW_DELAY = 100;       // 問題文表示を0.1秒遅らせる
+const QUESTION_SHOW_DELAY = 100;       // 問題文表示 0.1秒遅らせる
 const CHEE_PRE_HOLD_MS = 620;          // 暗転前の間
 const CUT_MS = 320;                    // 暗転時間
 const POST_CUT_HOLD_MS = 260;          // 暗転後の間
 const CHEE_SILENCE_MS = 180;           // 登場後の溜め
 const CHEE_SUCCESS_HOLD_MS = 700;      // ❤出たあと余韻
 const GIRL_REPLY_DELAY_MS = 500;       // 返事を0.5秒遅らせる
-
-/* flash timing */
 const FLASH_ON_MS = 120;
+
+/* チー娘出現率 */
+const CHEE_RATE = 0.35;
+
+/* ⭐︎⭐︎⭐︎：ゲージ最初だけ速い（0.5秒だけ倍率） */
+const STAR3_BOOST_MS = 500;
+const STAR3_BOOST_MULT = 1.35;
 
 let i=0;
 let mode="quiz";         // quiz | chee
@@ -310,8 +369,10 @@ let locked=false;
 let rafId=0;
 let cheeCooldown=false;
 let ended=false;
+let currentCheeLevel=null;
 
 /* DOM */
+const startScreen=document.getElementById("startScreen");
 const game=document.getElementById("gameScreen");
 const bg=document.querySelector("#gameScreen .bg");
 const q=document.getElementById("question");
@@ -372,9 +433,11 @@ function showGauge(){
   gaugeWrap.classList.add("show");
 }
 function resetCheeVisuals(){
-  game.classList.remove("chee","cut","announce","shake","hold");
+  game.classList.remove("chee","cut","announce","hold","star3");
   hideGauge();
   stopCheeTimer();
+  gauge.classList.remove("yellow","red");
+  currentCheeLevel=null;
 }
 
 /* flash */
@@ -419,30 +482,42 @@ function buildChoices(){
   });
 }
 
+/* 1問ごとに女の子画像変える */
+function applyQuestionBg(){
+  bg.style.backgroundImage=`url("${girls[i % girls.length]}")`;
+}
+
 function showQuestion(){
   ended=false;
   locked=false;
   mode="quiz";
   resetCheeVisuals();
 
-  bg.style.backgroundImage=`url("${girls[i%girls.length]}")`;
+  applyQuestionBg();
 
   q.classList.add("hide");
-  q.textContent=questions[i];
+  q.textContent=questions[i].text;
   clearSpeech();
   c.textContent=`${i+1}/${questions.length}`;
 
-  // 0.1秒遅らせてからフェードイン
-  setTimeout(()=>{
-    q.classList.remove("hide");
-  }, QUESTION_SHOW_DELAY);
-
+  setTimeout(()=> q.classList.remove("hide"), QUESTION_SHOW_DELAY);
   setButtonsEnabled(true);
+}
+
+/* チー娘難易度抽選 */
+function pickCheeLevel(){
+  const r = Math.random();
+  let acc = 0;
+  for(const lv of cheeLevels){
+    acc += lv.weight;
+    if(r <= acc) return lv;
+  }
+  return cheeLevels[0];
 }
 
 /* flow */
 function maybeChee(){
-  // 最終問題の後はチー娘を出さずに終了へ
+  // 最終問題後はチー娘を出さずに終了
   if(i >= questions.length-1){
     i++;
     if(i < questions.length) showQuestion();
@@ -473,47 +548,75 @@ function startChee(){
   mode="chee";
   locked=false;
 
-  game.classList.add("shake","cut","announce");
+  currentCheeLevel = pickCheeLevel();
+
+  game.classList.add("cut","announce","chee");
+  if(currentCheeLevel.stars === 3){
+    game.classList.add("star3");
+  }
+
+  // チー娘画像
+  bg.style.backgroundImage=`url("${randGirl()}")`;
 
   setTimeout(()=>{
-    game.classList.remove("shake");
-    game.classList.add("chee");
-    bg.style.backgroundImage=`url("${randGirl()}")`;
+    game.classList.remove("cut","announce");
+
+    // 問題文は消す
+    q.textContent="";
+    q.classList.add("hide");
+    clearSpeech();
 
     setTimeout(()=>{
-      game.classList.remove("cut","announce");
+      // チー！表示（⭐︎⭐︎⭐︎だけ5%大きく）
+      s.className = "speech cheeWord" + (currentCheeLevel.stars===3 ? " big" : "");
+      s.textContent = "チー！";
 
-      q.textContent="";
-      q.classList.add("hide");
-      clearSpeech();
+      startCheeTimer(currentCheeLevel);
+      setButtonsEnabled(true);
+    }, CHEE_SILENCE_MS);
 
-      setTimeout(()=>{
-        setSpeechPlain("チー");
-        startCheeTimer();
-        setButtonsEnabled(true);
-      }, CHEE_SILENCE_MS);
-
-    }, POST_CUT_HOLD_MS);
-
-  }, CUT_MS);
+  }, CUT_MS + POST_CUT_HOLD_MS);
 }
 
-function startCheeTimer(){
+function startCheeTimer(level){
   stopCheeTimer();
   showGauge();
 
+  // ゲージ色
+  gauge.classList.remove("yellow","red");
+  if(level.gauge === "yellow") gauge.classList.add("yellow");
+  if(level.gauge === "red") gauge.classList.add("red");
+
   const start=performance.now();
+
   const tick=(t)=>{
-    const r=Math.max(0,1-(t-start)/CHEE_TIME);
-    gauge.style.transform=`scaleX(${r})`;
-    gauge.style.background=`hsl(${210*r},85%,55%)`;
-    if(r>0){
-      rafId=requestAnimationFrame(tick);
+    let elapsed = t - start;
+
+    // ⭐︎⭐︎⭐︎：最初だけ減少を速く
+    if(level.stars === 3 && elapsed < STAR3_BOOST_MS){
+      elapsed = elapsed * STAR3_BOOST_MULT;
+    }else if(level.stars === 3 && elapsed >= STAR3_BOOST_MS){
+      // 速くした分のズレを足して、自然につながるようにする
+      const boosted = STAR3_BOOST_MS * STAR3_BOOST_MULT;
+      elapsed = boosted + (elapsed - STAR3_BOOST_MS);
+    }
+
+    const r = Math.max(0, 1 - (elapsed / level.timeMs));
+    gauge.style.transform = `scaleX(${r})`;
+
+    // ⭐︎（今の色）：寒色→暖色へ
+    if(level.gauge === "cool"){
+      gauge.style.background = `hsl(${210 * r}, 85%, 55%)`;
+    }
+
+    if(r > 0){
+      rafId = requestAnimationFrame(tick);
     }else{
       gameOver(); // チー娘で時間切れ＝ゲームオーバー
     }
   };
-  rafId=requestAnimationFrame(tick);
+
+  rafId = requestAnimationFrame(tick);
 }
 
 /* answer */
@@ -523,8 +626,6 @@ function answer(t){
   setButtonsEnabled(false);
 
   ensureAudio();
-
-  // 画面切り替えを少し「もっさり」させるため、即座に消しすぎない
   q.classList.add("hide");
 
   if(mode==="chee"){
@@ -533,11 +634,8 @@ function answer(t){
       stopCheeTimer();
       hideGauge();
 
-      // こちらの「ギュウ」は表示しない（チーは残す）
-      setTimeout(()=>{
-        // チー娘の流れ：チー → (こちらギュウ) → ❤
-        setHeartOnlyPop();
-      }, GIRL_REPLY_DELAY_MS);
+      // こちらの「ギュウ」は表示しない（チー！は残す）
+      setTimeout(()=> setHeartOnlyPop(), GIRL_REPLY_DELAY_MS);
 
       setTimeout(()=>{
         resetCheeVisuals();
@@ -552,18 +650,18 @@ function answer(t){
     return;
   }
 
-  const isChiiToIeBa = (questions[i] === "チーと言えば？");
+  const isSpecialHeart = !!questions[i].specialHeartOnGyuu;
 
   setTimeout(()=>{
-    // 「チーと言えば？」でギュウを押した時だけ ❤のみ
-    if(isChiiToIeBa && t==="ギュウ"){
+    // 「チーと言えば？」など specialHeartOnGyuu の問題でギュウ→❤（ポップ）
+    if(isSpecialHeart && t==="ギュウ"){
       setHeartOnlyPop();
     }
-    // それ以外でチーを押した時は ギュウ❤
+    // チーを押した時だけ：ギュウ❤
     else if(t==="チー"){
       setGyuuWithHeart();
     }
-    // チー以外は「笑」
+    // それ以外：笑
     else{
       setSpeechPlain("笑");
     }
@@ -578,7 +676,6 @@ function end(){
   resetCheeVisuals();
 
   bg.style.backgroundImage = `url("${END_CLEAR_IMAGE}")`;
-
   q.textContent="";
   clearSpeech();
 
@@ -595,9 +692,10 @@ function gameOver(){
   resetCheeVisuals();
 
   bg.style.backgroundImage = `url("${END_GOVER_IMAGE}")`;
-
   q.textContent="";
   clearSpeech();
+
+  // 画像側に吹き出し無しになったので、ここでテキスト表示
   setSpeechPlain("あなたチー牛じゃなかったのね。。");
 
   choices.innerHTML = `
@@ -618,11 +716,12 @@ function restart(){
 
 /* start */
 document.getElementById("startBtn").onclick=()=>{
-  document.getElementById("startScreen").classList.add("hide");
+  startScreen.classList.add("hide");
   game.classList.remove("hide");
   buildChoices();
   showQuestion();
 };
+
 window.restart=restart;
 </script>
 
