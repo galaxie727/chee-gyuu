@@ -60,14 +60,20 @@ header{
   margin-bottom:14px;
   text-shadow:0 8px 22px rgba(0,0,0,.75);
 }
-#startBtn{
+.startBtns{
+  display:flex;
+  gap:10px;
+  justify-content:center;
+}
+.startBtn{
   font-size:18px;
-  padding:14px 28px;
+  padding:14px 18px;
   border:none;
   border-radius:14px;
   background:#ffffff22;
   color:#fff;
   font-weight:900;
+  min-width:140px;
 }
 
 /* game */
@@ -137,7 +143,7 @@ header{
 }
 .question{
   font-size:20px;
-  font-weight:700;          /* 問題文だけ少し太字 */
+  font-weight:700;
   line-height:1.45;
   opacity:1;
   transition:opacity .22s;
@@ -154,7 +160,7 @@ header{
   transform:scale(1);
 }
 
-/* チー娘の「チー！」（⭐︎⭐︎⭐︎だけ少し大きい） */
+/* チー娘の「チー！」（Lv3+だけ少し大きい） */
 .cheeWord.big{ transform:scale(1.05); transform-origin:right bottom; }
 
 /* ❤ */
@@ -163,13 +169,13 @@ header{
   text-shadow:0 8px 22px rgba(255,45,85,.35);
 }
 @keyframes heartPop{
-  0%{ transform:scale(0.8); opacity:.0; }
+  0%{ transform:scale(0.8); opacity:0; }
   55%{ transform:scale(1.25); opacity:1; }
   100%{ transform:scale(1); opacity:1; }
 }
 .heartPop{ animation:heartPop .22s ease-out; }
 
-/* ⭐︎⭐︎⭐︎背景揺れ（軽め） */
+/* Lv3+ 背景揺れ（軽め） */
 @keyframes bgShake {
   0%   { transform: translate(0, 0) scale(1.12); }
   20%  { transform: translate(-2px, 1px) scale(1.12); }
@@ -178,7 +184,7 @@ header{
   80%  { transform: translate(1px, 2px) scale(1.12); }
   100% { transform: translate(0, 0) scale(1.12); }
 }
-#gameScreen.chee.star3 .bg{ animation:bgShake .35s infinite; }
+#gameScreen.chee.lv3plus .bg{ animation:bgShake .35s infinite; }
 
 /* choices */
 .choices{
@@ -244,7 +250,10 @@ header{
   <div class="overlay">
     <div class="startPanel">
       <div class="startTitle">ガチ！チー牛診断！！</div>
-      <button id="startBtn">START</button>
+      <div class="startBtns">
+        <button class="startBtn" id="startBtnNormal">START</button>
+        <button class="startBtn" id="startBtnChee">チー娘モード</button>
+      </div>
     </div>
   </div>
 </div>
@@ -273,13 +282,12 @@ header{
 <script>
 /* ===== 画像 ===== */
 const END_CLEAR_IMAGE = "girl_end.png";     // クリア
-const END_GOVER_IMAGE = "girl_gover.png";   // チー娘負け（吹き出し無しver想定）
+const END_GOVER_IMAGE = "girl_gover.png";   // チー娘負け
 
-/* ===== 問題（45問） =====
-   ※ "specialHeartOnGyuu" の問題だけ、ギュウ回答で ❤（ポップ+SE+フラッシュ） */
+/* ===== 問題（45問） ===== */
 const questions = [
   { text:"あなたはチー牛ですか？" },
-  { text:"チーと言えば？", specialHeartOnGyuu:true },
+  { text:"チーと言えば？" },
   { text:"石原さとみさんに「チー」と言われたら？" },
   { text:"ギュウと言ってもらいたい？" },
   { text:"チーズ牛丼を頼んだ人を一瞬だけ見てしまったことはありますか？" },
@@ -329,47 +337,77 @@ const questions = [
   { text:"『チー牛』という言葉を聞いても、怒らずスルーできますか？" },
   { text:"あなたは『チーと言えばギュウ』の正解率に自信がありますか？" },
   { text:"『ギュウ』と答えると世界が少し平和になると思いますか？" },
-  { text:"最後にひとこと。チーと言えば？", specialHeartOnGyuu:true }
+  { text:"最後にひとこと。チーと言えば？" }
 ];
 
 /* 女の子画像（通常時） */
 const girls=["girl_1.png","girl_2.png","girl_3.png","girl_4.png","girl_5.png","girl_6.png"];
 
-/* ===== チー娘 難易度 =====
-   ⭐︎：今の色（寒色→暖色に変化）/ 時間ゆるめ
-   ⭐︎⭐︎：黄色 / 時間短め
-   ⭐︎⭐︎⭐︎：赤 / 時間さらに短い + 背景揺れ + 「チー！」5%大きい + ゲージ最初だけ減り速い */
+/* ===== チー娘モード：章/レベル ===== */
+const CHEE_CHAPTER_SIZE = 10;   // 1章=10戦（ここを変えれば調整できる）
+let cheeChapter = 1;
+let cheeLevelNum = 1;          // 章ごとに+1
+let cheeBattleCount = 0;       // 何戦したか
+
+/* ===== チー娘乱入（通常モード用の3段階） ===== */
 const cheeLevels = [
   { stars:1, timeMs:2400, gauge:"cool",  weight:0.60 },
   { stars:2, timeMs:1700, gauge:"yellow",weight:0.30 },
   { stars:3, timeMs:1200, gauge:"red",   weight:0.10 }
 ];
 
+/* ===== チー娘モード用：レベル→時間計算 =====
+   基本：レベルが上がるほど短い。
+   たまに「遅い個体」を混ぜて緩急をつける。 */
+function cheeOnlyPickLevel(){
+  // 基本は現在レベル
+  let lv = cheeLevelNum;
+
+  // ちょいちょい遅いのを混ぜる（20%）
+  if(Math.random() < 0.20){
+    lv = Math.max(1, lv - (Math.random()<0.7 ? 1 : 2));
+  }
+
+  // stars判定：1=⭐︎、2=⭐︎⭐︎、3=⭐︎⭐︎⭐︎（Lv3以上は⭐︎⭐︎⭐︎扱い）
+  const stars = lv <= 1 ? 1 : (lv === 2 ? 2 : 3);
+
+  // timeMs：レベルが上がるほど短く（下限は600ms）
+  const base = 2400 - (lv - 1) * 110;
+  const timeMs = Math.max(600, Math.round(base));
+
+  // gauge：starsに応じて
+  const gauge = stars === 1 ? "cool" : (stars === 2 ? "yellow" : "red");
+
+  return { stars, timeMs, gauge, lv };
+}
+
 /* もっさり＆演出 */
 const NORMAL_REACT_MS = 1050;
-const QUESTION_SHOW_DELAY = 100;       // 問題文表示 0.1秒遅らせる
-const CHEE_PRE_HOLD_MS = 620;          // 暗転前の間
-const CUT_MS = 320;                    // 暗転時間
-const POST_CUT_HOLD_MS = 260;          // 暗転後の間
-const CHEE_SILENCE_MS = 180;           // 登場後の溜め
-const CHEE_SUCCESS_HOLD_MS = 700;      // ❤出たあと余韻
-const GIRL_REPLY_DELAY_MS = 500;       // 返事を0.5秒遅らせる
+const QUESTION_SHOW_DELAY = 100;
+const CHEE_PRE_HOLD_MS = 620;
+const CUT_MS = 320;
+const POST_CUT_HOLD_MS = 260;
+const CHEE_SILENCE_MS = 180;
+const CHEE_SUCCESS_HOLD_MS = 700;
+const GIRL_REPLY_DELAY_MS = 500;
 const FLASH_ON_MS = 120;
 
-/* チー娘出現率 */
+/* 通常モード：チー娘出現率 */
 const CHEE_RATE = 0.35;
 
-/* ⭐︎⭐︎⭐︎：ゲージ最初だけ速い（0.5秒だけ倍率） */
+/* ⭐︎⭐︎⭐︎：ゲージ最初だけ速い */
 const STAR3_BOOST_MS = 500;
 const STAR3_BOOST_MULT = 1.35;
 
+/* state */
 let i=0;
-let mode="quiz";         // quiz | chee
+let mode="quiz";           // quiz | chee
 let locked=false;
 let rafId=0;
 let cheeCooldown=false;
 let ended=false;
-let currentCheeLevel=null;
+let currentCheeLevel=null; // {stars,timeMs,gauge,...}
+let gameMode="normal";     // normal | cheeOnly
 
 /* DOM */
 const startScreen=document.getElementById("startScreen");
@@ -383,7 +421,7 @@ const gauge=document.getElementById("gaugeBar");
 const choices=document.getElementById("choices");
 const flash=document.getElementById("flash");
 
-/* ===== WebAudio: 작은 "ポン" SE ===== */
+/* ===== WebAudio: 小さいポン ===== */
 let audioCtx=null;
 function ensureAudio(){
   if(!audioCtx){
@@ -433,7 +471,7 @@ function showGauge(){
   gaugeWrap.classList.add("show");
 }
 function resetCheeVisuals(){
-  game.classList.remove("chee","cut","announce","hold","star3");
+  game.classList.remove("chee","cut","announce","hold","lv3plus");
   hideGauge();
   stopCheeTimer();
   gauge.classList.remove("yellow","red");
@@ -468,6 +506,10 @@ function setGyuuWithHeart(){
   s.className = "speech";
   s.innerHTML = `ギュウ<span class="heartOnly">❤</span>`;
 }
+function setTextWithHeart(text){
+  s.className = "speech";
+  s.innerHTML = `${text}<span class="heartOnly">❤</span>`;
+}
 
 /* UI */
 function buildChoices(){
@@ -482,11 +524,12 @@ function buildChoices(){
   });
 }
 
-/* 1問ごとに女の子画像変える */
+/* 背景 */
 function applyQuestionBg(){
   bg.style.backgroundImage=`url("${girls[i % girls.length]}")`;
 }
 
+/* ===== 通常モード：問題表示 ===== */
 function showQuestion(){
   ended=false;
   locked=false;
@@ -504,8 +547,8 @@ function showQuestion(){
   setButtonsEnabled(true);
 }
 
-/* チー娘難易度抽選 */
-function pickCheeLevel(){
+/* ===== 通常モード：チー娘乱入の難易度抽選 ===== */
+function pickCheeLevelNormal(){
   const r = Math.random();
   let acc = 0;
   for(const lv of cheeLevels){
@@ -515,9 +558,8 @@ function pickCheeLevel(){
   return cheeLevels[0];
 }
 
-/* flow */
+/* ===== 次へ（通常モード） ===== */
 function maybeChee(){
-  // 最終問題後はチー娘を出さずに終了
   if(i >= questions.length-1){
     i++;
     if(i < questions.length) showQuestion();
@@ -533,7 +575,7 @@ function maybeChee(){
     game.classList.add("hold");
     setTimeout(()=>{
       game.classList.remove("hold");
-      startChee();
+      startCheeBattle(pickCheeLevelNormal());
     }, CHEE_PRE_HOLD_MS);
   }else{
     cheeCooldown=false;
@@ -543,19 +585,20 @@ function maybeChee(){
   }
 }
 
-function startChee(){
+/* ===== チー娘戦開始（共通） ===== */
+function startCheeBattle(level){
   if(ended) return;
   mode="chee";
   locked=false;
 
-  currentCheeLevel = pickCheeLevel();
+  currentCheeLevel = level;
 
   game.classList.add("cut","announce","chee");
-  if(currentCheeLevel.stars === 3){
-    game.classList.add("star3");
+  if(level.stars >= 3){
+    game.classList.add("lv3plus");
   }
 
-  // チー娘画像
+  // チー娘画像（ランダム）
   bg.style.backgroundImage=`url("${randGirl()}")`;
 
   setTimeout(()=>{
@@ -567,22 +610,22 @@ function startChee(){
     clearSpeech();
 
     setTimeout(()=>{
-      // チー！表示（⭐︎⭐︎⭐︎だけ5%大きく）
-      s.className = "speech cheeWord" + (currentCheeLevel.stars===3 ? " big" : "");
+      // チー！表示（Lv3+だけ5%大きい）
+      s.className = "speech cheeWord" + (level.stars>=3 ? " big" : "");
       s.textContent = "チー！";
 
-      startCheeTimer(currentCheeLevel);
+      startCheeTimer(level);
       setButtonsEnabled(true);
     }, CHEE_SILENCE_MS);
 
   }, CUT_MS + POST_CUT_HOLD_MS);
 }
 
+/* ===== チー娘タイマー ===== */
 function startCheeTimer(level){
   stopCheeTimer();
   showGauge();
 
-  // ゲージ色
   gauge.classList.remove("yellow","red");
   if(level.gauge === "yellow") gauge.classList.add("yellow");
   if(level.gauge === "red") gauge.classList.add("red");
@@ -592,11 +635,10 @@ function startCheeTimer(level){
   const tick=(t)=>{
     let elapsed = t - start;
 
-    // ⭐︎⭐︎⭐︎：最初だけ減少を速く
-    if(level.stars === 3 && elapsed < STAR3_BOOST_MS){
+    // Lv3+：最初だけ減少を速く
+    if(level.stars >= 3 && elapsed < STAR3_BOOST_MS){
       elapsed = elapsed * STAR3_BOOST_MULT;
-    }else if(level.stars === 3 && elapsed >= STAR3_BOOST_MS){
-      // 速くした分のズレを足して、自然につながるようにする
+    }else if(level.stars >= 3 && elapsed >= STAR3_BOOST_MS){
       const boosted = STAR3_BOOST_MS * STAR3_BOOST_MULT;
       elapsed = boosted + (elapsed - STAR3_BOOST_MS);
     }
@@ -604,7 +646,7 @@ function startCheeTimer(level){
     const r = Math.max(0, 1 - (elapsed / level.timeMs));
     gauge.style.transform = `scaleX(${r})`;
 
-    // ⭐︎（今の色）：寒色→暖色へ
+    // ⭐︎のみ：寒色→暖色（今の色変化）
     if(level.gauge === "cool"){
       gauge.style.background = `hsl(${210 * r}, 85%, 55%)`;
     }
@@ -612,14 +654,33 @@ function startCheeTimer(level){
     if(r > 0){
       rafId = requestAnimationFrame(tick);
     }else{
-      gameOver(); // チー娘で時間切れ＝ゲームオーバー
+      gameOver(); // 時間切れ
     }
   };
 
   rafId = requestAnimationFrame(tick);
 }
 
-/* answer */
+/* ===== チー娘モード：次の戦闘へ ===== */
+function nextCheeOnly(){
+  // 戦数カウント
+  cheeBattleCount++;
+
+  // 章進行：1章ごとにレベル+1
+  if(cheeBattleCount % CHEE_CHAPTER_SIZE === 0){
+    cheeChapter++;
+    cheeLevelNum++;
+  }
+
+  // カウンター表示（章とレベル）
+  c.textContent = `第${cheeChapter}章 Lv${cheeLevelNum}`;
+
+  // 次のチー娘レベル（緩急あり）
+  const lv = cheeOnlyPickLevel();
+  startCheeBattle(lv);
+}
+
+/* ===== 回答処理 ===== */
 function answer(t){
   if(locked || ended) return;
   locked=true;
@@ -639,6 +700,14 @@ function answer(t){
 
       setTimeout(()=>{
         resetCheeVisuals();
+
+        // チー娘モードなら次の戦へ
+        if(gameMode === "cheeOnly"){
+          nextCheeOnly();
+          return;
+        }
+
+        // 通常モードなら次の問題へ
         i++;
         if(i < questions.length) showQuestion();
         else end();
@@ -650,19 +719,18 @@ function answer(t){
     return;
   }
 
-  const isSpecialHeart = !!questions[i].specialHeartOnGyuu;
-
+  // ===== 通常問題：返事を指定通りに変更 =====
   setTimeout(()=>{
-    // 「チーと言えば？」など specialHeartOnGyuu の問題でギュウ→❤（ポップ）
-    if(isSpecialHeart && t==="ギュウ"){
-      setHeartOnlyPop();
-    }
-    // チーを押した時だけ：ギュウ❤
-    else if(t==="チー"){
+    if(t==="はい"){
+      setTextWithHeart("笑");
+    }else if(t==="いいえ"){
+      setTextWithHeart("クスッ");
+    }else if(t==="ギュウ"){
+      setTextWithHeart("ニコッ");
+    }else if(t==="チー"){
+      // チーだけは今まで通り「ギュウ❤」
       setGyuuWithHeart();
-    }
-    // それ以外：笑
-    else{
+    }else{
       setSpeechPlain("笑");
     }
   }, GIRL_REPLY_DELAY_MS);
@@ -680,7 +748,7 @@ function end(){
   clearSpeech();
 
   choices.innerHTML = `
-    <button class="choice gyuuBtn" style="grid-column:1/-1" onclick="restart()">
+    <button class="choice gyuuBtn" style="grid-column:1/-1" onclick="restart('normal')">
       もう一回
     </button>
   `;
@@ -694,32 +762,53 @@ function gameOver(){
   bg.style.backgroundImage = `url("${END_GOVER_IMAGE}")`;
   q.textContent="";
   clearSpeech();
-
-  // 画像側に吹き出し無しになったので、ここでテキスト表示
   setSpeechPlain("あなたチー牛じゃなかったのね。。");
 
   choices.innerHTML = `
-    <button class="choice gyuuBtn" style="grid-column:1/-1" onclick="restart()">
+    <button class="choice gyuuBtn" style="grid-column:1/-1" onclick="restart(gameMode)">
       もう一回
     </button>
   `;
   c.textContent = "GAME OVER";
 }
 
-function restart(){
+function restart(modeName){
   ended=false;
   cheeCooldown=false;
-  i=0;
+  mode="quiz";
+  locked=false;
+  stopCheeTimer();
+  resetCheeVisuals();
+
+  gameMode = modeName || "normal";
+
   buildChoices();
-  showQuestion();
+
+  if(gameMode === "cheeOnly"){
+    // チー娘モード初期化
+    cheeChapter = 1;
+    cheeLevelNum = 1;
+    cheeBattleCount = 0;
+    c.textContent = `第${cheeChapter}章 Lv${cheeLevelNum}`;
+    // すぐチー娘戦
+    nextCheeOnly();
+  }else{
+    // 通常モード
+    i=0;
+    showQuestion();
+  }
 }
 
-/* start */
-document.getElementById("startBtn").onclick=()=>{
+/* start buttons */
+document.getElementById("startBtnNormal").onclick=()=>{
   startScreen.classList.add("hide");
   game.classList.remove("hide");
-  buildChoices();
-  showQuestion();
+  restart("normal");
+};
+document.getElementById("startBtnChee").onclick=()=>{
+  startScreen.classList.add("hide");
+  game.classList.remove("hide");
+  restart("cheeOnly");
 };
 
 window.restart=restart;
