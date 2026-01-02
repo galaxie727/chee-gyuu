@@ -201,10 +201,6 @@ header{
   color:#fff;
 }
 .choice:disabled{opacity:.55}
-.yes{background:#2e8b57}
-.no{background:#555}
-.cheeBtn{background:#2f6fb2}
-.gyuuBtn{background:#e28a2f}
 
 /* チー娘モード：10ボタン時は少し小さく */
 .choices.chee10 .choice{
@@ -212,6 +208,12 @@ header{
   font-size:14px;
   border-radius:12px;
 }
+
+/* normal button base (will be overridden by JS random colors too) */
+.yes{background:#2e8b57}
+.no{background:#555}
+.cheeBtn{background:#2f6fb2}
+.gyuuBtn{background:#e28a2f}
 
 /* gauge (チー娘中だけ表示) */
 .gauge{
@@ -370,6 +372,7 @@ const LV3_BOOST_MULT = 1.35;
 
 /* チー娘モード：勝つたびレベルアップ */
 let cheeLevelNum = 1;
+let cheeOnlyLastLevel = 1;   // ← ゲームオーバー表示用（最後に到達したLv）
 
 /* state */
 let i=0;
@@ -378,7 +381,7 @@ let locked=false;
 let rafId=0;
 let cheeCooldown=false;
 let ended=false;
-let currentCheeLevel=null; // {stars,timeMs,gauge,lv}
+let currentCheeLevel=null;
 let gameMode="normal";     // normal | cheeOnly
 
 /* DOM */
@@ -484,6 +487,20 @@ function setTextWithHeart(text){
   s.innerHTML = `${text}<span class="heartOnly">❤</span>`;
 }
 
+/* ===== ボタン色（全部のボタンに適当に） ===== */
+const buttonColors = [
+  "#d64545","#c0392b","#e67e22","#f1c40f",
+  "#27ae60","#16a085","#2980b9","#8e44ad",
+  "#2c3e50","#7f8c8d","#ff6b6b","#ffa502"
+];
+function applyRandomColorsToButtons(){
+  const btns = document.querySelectorAll("#choices button.choice");
+  const cols = shuffle(buttonColors);
+  btns.forEach((b,idx)=>{
+    b.style.background = cols[idx % cols.length];
+  });
+}
+
 /* UI: 通常4択 */
 function buildChoices(){
   choices.classList.remove("chee10");
@@ -496,6 +513,7 @@ function buildChoices(){
     b.onclick=()=>answer(t);
     choices.appendChild(b);
   });
+  applyRandomColorsToButtons();
 }
 
 /* UI: チー娘モード 10ボタン（位置ランダム） */
@@ -514,6 +532,7 @@ function buildChoicesChee10(){
     const b=document.createElement("button");
     b.textContent = label;
 
+    // クラスは残す（フォント等の一貫性のため）
     if(label==="ギュウ") b.className="choice gyuuBtn";
     else if(label==="チー") b.className="choice cheeBtn";
     else if(label==="はい") b.className="choice yes";
@@ -523,6 +542,9 @@ function buildChoicesChee10(){
     b.onclick=()=>answer(label);
     choices.appendChild(b);
   });
+
+  // 10個全部にランダム色
+  applyRandomColorsToButtons();
 }
 
 /* 背景 */
@@ -616,19 +638,16 @@ function startCheeBattle(level){
     game.classList.add("lv3plus");
   }
 
-  // チー娘画像（ランダム）
   bg.style.backgroundImage=`url("${randGirl()}")`;
 
   setTimeout(()=>{
     game.classList.remove("cut","announce");
 
-    // 問題文は消す
     q.textContent="";
     q.classList.add("hide");
     clearSpeech();
 
     setTimeout(()=>{
-      // チー！表示（Lv3+だけ5%大きい）
       s.className = "speech cheeWord" + (level.stars>=3 ? " big" : "");
       s.textContent = "チー！";
 
@@ -668,7 +687,6 @@ function startCheeTimer(level){
     const r = Math.max(0, 1 - (elapsed / level.timeMs));
     gauge.style.transform = `scaleX(${r})`;
 
-    // ⭐︎のみ：寒色→暖色
     if(level.gauge === "cool"){
       gauge.style.background = `hsl(${210 * r}, 85%, 55%)`;
     }
@@ -686,6 +704,7 @@ function startCheeTimer(level){
 /* ===== チー娘モード：次の戦闘へ（1勝ごとにLv+1） ===== */
 function nextCheeOnlyAfterWin(){
   cheeLevelNum++;
+  cheeOnlyLastLevel = cheeLevelNum;
   c.textContent = `Lv${cheeLevelNum}`;
 
   const lv = cheeOnlyPickLevel();
@@ -702,7 +721,6 @@ function answer(t){
   q.classList.add("hide");
 
   if(mode==="chee"){
-    // チー娘：ギュウ以外は即ゲームオーバー
     if(t==="ギュウ"){
       stopCheeTimer();
       hideGauge();
@@ -730,11 +748,11 @@ function answer(t){
 
   // ===== 通常問題：返事指定 =====
   setTimeout(()=>{
-    if(t==="はい")      setTextWithHeart("笑");
+    if(t==="はい")        setTextWithHeart("笑");
     else if(t==="いいえ") setTextWithHeart("クスッ");
     else if(t==="ギュウ") setTextWithHeart("ニコッ");
     else if(t==="チー")   setGyuuWithHeart();
-    else                 setTextWithHeart("笑");
+    else                  setTextWithHeart("笑");
   }, GIRL_REPLY_DELAY_MS);
 
   setTimeout(maybeChee, GIRL_REPLY_DELAY_MS + NORMAL_REACT_MS);
@@ -754,6 +772,7 @@ function end(){
       もう一回
     </button>
   `;
+  applyRandomColorsToButtons();
   c.textContent = `${questions.length}/${questions.length}`;
 }
 
@@ -764,14 +783,22 @@ function gameOver(){
   bg.style.backgroundImage = `url("${END_GOVER_IMAGE}")`;
   q.textContent="";
   clearSpeech();
-  setSpeechPlain("あなたチー牛じゃなかったのね。。");
+
+  // チー娘モードなら「どのLvで死んだか」を表示
+  if(gameMode === "cheeOnly"){
+    setSpeechPlain(`Lv${cheeLevelNum}でゲームオーバー`);
+    c.textContent = `GAME OVER (Lv${cheeLevelNum})`;
+  }else{
+    setSpeechPlain("あなたチー牛じゃなかったのね。。");
+    c.textContent = "GAME OVER";
+  }
 
   choices.innerHTML = `
     <button class="choice gyuuBtn" style="grid-column:1/-1" onclick="restart(gameMode)">
       もう一回
     </button>
   `;
-  c.textContent = "GAME OVER";
+  applyRandomColorsToButtons();
 }
 
 function restart(modeName){
@@ -787,11 +814,10 @@ function restart(modeName){
   if(gameMode === "cheeOnly"){
     // チー娘モード初期化（最初はLv1）
     cheeLevelNum = 1;
+    cheeOnlyLastLevel = 1;
     c.textContent = `Lv${cheeLevelNum}`;
-    // すぐ1戦目
     startCheeBattle(cheeOnlyPickLevel());
   }else{
-    // 通常モード
     i=0;
     buildChoices();
     showQuestion();
