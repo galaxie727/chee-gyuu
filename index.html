@@ -209,12 +209,6 @@ header{
   border-radius:12px;
 }
 
-/* normal button base (will be overridden by JS random colors too) */
-.yes{background:#2e8b57}
-.no{background:#555}
-.cheeBtn{background:#2f6fb2}
-.gyuuBtn{background:#e28a2f}
-
 /* gauge (チー娘中だけ表示) */
 .gauge{
   height:8px;
@@ -372,7 +366,6 @@ const LV3_BOOST_MULT = 1.35;
 
 /* チー娘モード：勝つたびレベルアップ */
 let cheeLevelNum = 1;
-let cheeOnlyLastLevel = 1;   // ← ゲームオーバー表示用（最後に到達したLv）
 
 /* state */
 let i=0;
@@ -531,19 +524,11 @@ function buildChoicesChee10(){
   labels.forEach(label=>{
     const b=document.createElement("button");
     b.textContent = label;
-
-    // クラスは残す（フォント等の一貫性のため）
-    if(label==="ギュウ") b.className="choice gyuuBtn";
-    else if(label==="チー") b.className="choice cheeBtn";
-    else if(label==="はい") b.className="choice yes";
-    else if(label==="いいえ") b.className="choice no";
-    else b.className="choice no";
-
+    b.className="choice"; // 全部同等に（色はランダムで付ける）
     b.onclick=()=>answer(label);
     choices.appendChild(b);
   });
 
-  // 10個全部にランダム色
   applyRandomColorsToButtons();
 }
 
@@ -651,7 +636,6 @@ function startCheeBattle(level){
       s.className = "speech cheeWord" + (level.stars>=3 ? " big" : "");
       s.textContent = "チー！";
 
-      // モード別：ボタン再生成（位置毎回ランダム）
       if(gameMode === "cheeOnly") buildChoicesChee10();
       else buildChoices();
 
@@ -676,7 +660,6 @@ function startCheeTimer(level){
   const tick=(t)=>{
     let elapsed = t - start;
 
-    // Lv3+：最初だけ減少を速く
     if(level.stars >= 3 && elapsed < LV3_BOOST_MS){
       elapsed = elapsed * LV3_BOOST_MULT;
     }else if(level.stars >= 3 && elapsed >= LV3_BOOST_MS){
@@ -704,9 +687,7 @@ function startCheeTimer(level){
 /* ===== チー娘モード：次の戦闘へ（1勝ごとにLv+1） ===== */
 function nextCheeOnlyAfterWin(){
   cheeLevelNum++;
-  cheeOnlyLastLevel = cheeLevelNum;
   c.textContent = `Lv${cheeLevelNum}`;
-
   const lv = cheeOnlyPickLevel();
   startCheeBattle(lv);
 }
@@ -746,7 +727,6 @@ function answer(t){
     return;
   }
 
-  // ===== 通常問題：返事指定 =====
   setTimeout(()=>{
     if(t==="はい")        setTextWithHeart("笑");
     else if(t==="いいえ") setTextWithHeart("クスッ");
@@ -758,7 +738,19 @@ function answer(t){
   setTimeout(maybeChee, GIRL_REPLY_DELAY_MS + NORMAL_REACT_MS);
 }
 
-/* end / gameover */
+/* ===== クリア / ゲームオーバー：ボタン表示を遅らせる & トップ戻る追加 ===== */
+function renderEndButtonsDelayed(delayMs){
+  choices.innerHTML = ""; // まず空にして誤タップ防止
+
+  setTimeout(()=>{
+    choices.innerHTML = `
+      <button class="choice" style="grid-column:1/-1" onclick="restart(gameMode)">もう一回</button>
+      <button class="choice" style="grid-column:1/-1" onclick="backToTop()">トップに戻る</button>
+    `;
+    applyRandomColorsToButtons();
+  }, delayMs);
+}
+
 function end(){
   ended=true;
   resetCheeVisuals();
@@ -767,13 +759,10 @@ function end(){
   q.textContent="";
   clearSpeech();
 
-  choices.innerHTML = `
-    <button class="choice gyuuBtn" style="grid-column:1/-1" onclick="restart('normal')">
-      もう一回
-    </button>
-  `;
-  applyRandomColorsToButtons();
   c.textContent = `${questions.length}/${questions.length}`;
+
+  // クリア画面：すぐ表示でOK（誤タップが気になるなら 300 とかにしてもOK）
+  renderEndButtonsDelayed(0);
 }
 
 function gameOver(){
@@ -784,7 +773,6 @@ function gameOver(){
   q.textContent="";
   clearSpeech();
 
-  // チー娘モードなら「どのLvで死んだか」を表示
   if(gameMode === "cheeOnly"){
     setSpeechPlain(`Lv${cheeLevelNum}でゲームオーバー`);
     c.textContent = `GAME OVER (Lv${cheeLevelNum})`;
@@ -793,12 +781,8 @@ function gameOver(){
     c.textContent = "GAME OVER";
   }
 
-  choices.innerHTML = `
-    <button class="choice gyuuBtn" style="grid-column:1/-1" onclick="restart(gameMode)">
-      もう一回
-    </button>
-  `;
-  applyRandomColorsToButtons();
+  // ★誤タップ防止：1秒後にボタン出す
+  renderEndButtonsDelayed(1000);
 }
 
 function restart(modeName){
@@ -812,9 +796,7 @@ function restart(modeName){
   gameMode = modeName || "normal";
 
   if(gameMode === "cheeOnly"){
-    // チー娘モード初期化（最初はLv1）
     cheeLevelNum = 1;
-    cheeOnlyLastLevel = 1;
     c.textContent = `Lv${cheeLevelNum}`;
     startCheeBattle(cheeOnlyPickLevel());
   }else{
@@ -822,6 +804,18 @@ function restart(modeName){
     buildChoices();
     showQuestion();
   }
+}
+
+function backToTop(){
+  ended=false;
+  stopCheeTimer();
+  resetCheeVisuals();
+  locked=false;
+  mode="quiz";
+  cheeCooldown=false;
+
+  game.classList.add("hide");
+  startScreen.classList.remove("hide");
 }
 
 /* start buttons */
@@ -837,6 +831,7 @@ document.getElementById("startBtnChee").onclick=()=>{
 };
 
 window.restart=restart;
+window.backToTop=backToTop;
 </script>
 
 </body>
