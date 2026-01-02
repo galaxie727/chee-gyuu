@@ -11,7 +11,6 @@
   --muted:#dddddd;
 }
 *{ box-sizing:border-box; }
-
 body{
   margin:0;
   font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP","Segoe UI",sans-serif;
@@ -20,7 +19,6 @@ body{
   min-height:100svh;
 }
 
-/* ===== App ===== */
 .app{
   width:min(560px,100%);
   margin:0 auto;
@@ -29,8 +27,9 @@ body{
   flex-direction:column;
 }
 
+/* ===== Header ===== */
 header{
-  padding:14px 16px 10px;
+  padding:12px 16px 10px;
   display:flex;
   justify-content:space-between;
   align-items:flex-end;
@@ -44,67 +43,64 @@ header{
   letter-spacing:0.12em;
 }
 .meta{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-end;
+  gap:6px;
   font-size:12px;
   color:var(--muted);
 }
-
-/* ===== Screen ===== */
-.screen{
-  flex:1;
-  position:relative;
-  overflow:hidden;
+.minirow{
+  display:flex;
+  gap:10px;
+  align-items:center;
 }
 
-/* Background images */
+/* time gauge */
+.gauge{
+  width:160px;
+  height:8px;
+  border-radius:999px;
+  background:rgba(255,255,255,0.12);
+  overflow:hidden;
+}
+.gauge > div{
+  height:100%;
+  width:100%;
+  background:rgba(255,255,255,0.55);
+  transform-origin:left center;
+  transform:scaleX(1);
+  transition:transform 50ms linear;
+}
+
+/* ===== Screen ===== */
+.screen{ flex:1; position:relative; overflow:hidden; }
 .bg{
-  position:absolute;
-  inset:0;
+  position:absolute; inset:0;
   background-size:cover;
   background-position:center;
   transform:scale(1.02);
 }
+#startScreen .bg{ background-image:url("girl_top.png"); }
 
-#startScreen .bg{
-  background-image:url("girl_top.png");
-}
-
-/* Overlay（暗幕：薄く） */
 .overlay{
-  position:absolute;
-  inset:0;
+  position:absolute; inset:0;
   display:flex;
   flex-direction:column;
   justify-content:flex-end;
   padding:16px;
   gap:12px;
-  background:linear-gradient(
-    to bottom,
-    rgba(0,0,0,0.15),
-    rgba(0,0,0,0.45)
-  );
+  background:linear-gradient(to bottom, rgba(0,0,0,0.15), rgba(0,0,0,0.45));
 }
 
-/* トップ：パネル内を中央寄せ */
-#startScreen .panel{
-  text-align:center;
-}
+/* top align */
+#startScreen .panel{ text-align:center; }
 
-/* 問題画面：上下に広げる */
-#gameScreen .overlay{
-  justify-content:space-between;
-}
-
-/* 正解フラッシュ（長め） */
-#gameScreen.flash .bg{
-  filter:saturate(1.1) contrast(1.12) brightness(1.35);
-  transition:filter 300ms ease;
-}
+/* game layout */
+#gameScreen .overlay{ justify-content:space-between; }
 
 /* ===== UI ===== */
-.panel{
-  background:none;
-  padding:0;
-}
+.panel{ background:none; padding:0; }
 
 .bubble{
   background:rgba(255,255,255,0.08);
@@ -116,7 +112,7 @@ header{
   justify-content:space-between;
 }
 
-/* 問題文：少し太字 + フェード */
+/* question text */
 .question{
   font-size:20px;
   line-height:1.45;
@@ -124,17 +120,18 @@ header{
   opacity:1;
   transition:opacity 180ms ease;
 }
-.question.fade{
-  opacity:0;
-}
+.question.fade{ opacity:0; }
 
 .speech{
   align-self:flex-end;
-  font-size:22px;
+  font-size:28px;
   font-weight:900;
-  letter-spacing:0.1em;
-  min-height:28px;
+  letter-spacing:0.12em;
+  min-height:34px;
+  opacity:1;
+  transition:opacity 140ms ease;
 }
+.speech.fade{ opacity:0; }
 
 /* ===== Choices ===== */
 .choices{
@@ -156,48 +153,32 @@ button{
   transition:transform 0.1s, filter 0.2s;
 }
 
-/* ボタン色 */
 .choice-yes{ background:#2e8b57; }   /* はい */
 .choice-no{ background:#555555; }    /* いいえ */
 .choice-chee{ background:#2f6fb2; }  /* チー */
 .choice-gyuu{ background:#e28a2f; }  /* ギュウ */
 
-button:active{
-  transform:translateY(1px) scale(0.98);
-}
+button:active{ transform:translateY(1px) scale(0.98); }
+button:disabled{ opacity:0.55; }
+.choice.selected{ filter:brightness(1.25); transform:translateY(2px) scale(0.97); }
 
-button:disabled{
-  opacity:0.55;
-}
-
-.choice.selected{
-  filter:brightness(1.25);
-  transform:translateY(2px) scale(0.97);
-}
-
-/* Top */
 .heroTitle{
   font-size:18px;
   font-weight:900;
   letter-spacing:0.14em;
 }
-
 .big{
   font-size:18px;
   padding:16px 24px;
   background:#ffffff22;
 }
-
-/* STARTボタンを確実に中央へ */
-#startBtn{
-  display:block;
-  margin:0 auto;
-}
+#startBtn{ display:block; margin:0 auto; }
 
 .hide{ display:none; }
 
 @media(max-width:420px){
   .question{ font-size:19px; }
+  .gauge{ width:140px; }
 }
 </style>
 </head>
@@ -207,7 +188,14 @@ button:disabled{
 
 <header>
   <div class="title">チーと言えばギュウと答える</div>
-  <div class="meta"><span id="counter">-</span></div>
+  <div class="meta">
+    <div class="minirow">
+      <span id="score">0</span>
+      <span> / </span>
+      <span id="countdown">-</span>
+    </div>
+    <div class="gauge"><div id="gaugeBar"></div></div>
+  </div>
 </header>
 
 <!-- ===== START ===== -->
@@ -240,25 +228,16 @@ button:disabled{
 </div>
 
 <script>
-/* ===== 6問固定 ===== */
-const questions = [
-  { text:"あなたはチー牛ですか？", correct:"はい" },
-  { text:"チーと言えば？", correct:"ギュウ" },
-  { text:"石原さとみさんに「チー」と言われたら、あなたは「ギュウ」と答えますか？", correct:"はい" },
-  { text:"石原さとみさんに「ギュウ」と言ってもらいたいと思いますか？", correct:"はい" },
-  { text:"チーズ牛丼を頼んだ人を、一瞬だけ見てしまったことはありますか？", correct:"はい" },
-  { text:"あなたは三度の飯よりチー牛が好きって本当ですか？", correct:"はい" }
-];
+/* =========================
+   設定（ここだけ好みで調整）
+========================= */
+// 反応制限時間（秒）
+const TIME_LIMIT_MS = 2500;          // 2.5秒
+// チー娘が来るまでの待ち時間（ms）
+const WAIT_MIN_MS = 600;
+const WAIT_MAX_MS = 1800;
 
-const ALL_CHOICES = ["はい","いいえ","チー","ギュウ"];
-const CLASS_MAP = {
-  "はい":"choice-yes",
-  "いいえ":"choice-no",
-  "チー":"choice-chee",
-  "ギュウ":"choice-gyuu"
-};
-
-/* ★ 1問ごとに女の子画像を切り替え（足りなければループ） */
+// 女の子画像（ランダムで登場）
 const GIRL_IMAGES = [
   "girl_1.png",
   "girl_2.png",
@@ -268,106 +247,213 @@ const GIRL_IMAGES = [
   "girl_6.png"
 ];
 
-/* ★ 終了専用画像 */
+// ゲームオーバー用（任意：無くても動く。あれば切り替える）
 const GIRL_END_IMAGE = "girl_end.png";
 
-let current=0, locked=false;
+/* ========================= */
 
-const startScreen=document.getElementById("startScreen");
-const gameScreen=document.getElementById("gameScreen");
-const bgEl = gameScreen.querySelector(".bg");
-const qEl=document.getElementById("question");
-const sEl=document.getElementById("speech");
-const cEl=document.getElementById("counter");
-const choicesEl=document.getElementById("choices");
+const ALL_CHOICES = ["はい","いいえ","チー","ギュウ"];
+const CLASS_MAP = {
+  "はい":"choice-yes",
+  "いいえ":"choice-no",
+  "チー":"choice-chee",
+  "ギュウ":"choice-gyuu"
+};
+
+const startScreen = document.getElementById("startScreen");
+const gameScreen  = document.getElementById("gameScreen");
+const bgEl        = gameScreen.querySelector(".bg");
+
+const qEl   = document.getElementById("question");
+const sEl   = document.getElementById("speech");
+const choicesEl = document.getElementById("choices");
+
+const scoreEl = document.getElementById("score");
+const countdownEl = document.getElementById("countdown");
+const gaugeBar = document.getElementById("gaugeBar");
+
+let locked = false;
+let active = false;          // チー娘が来て回答受付中か
+let score  = 0;
+
+let roundStart = 0;
+let rafId = 0;
+let timeoutId = 0;
+let nextSpawnId = 0;
 
 function shuffle(a){ return a.slice().sort(()=>Math.random()-0.5); }
+function randInt(min,max){ return Math.floor(min + Math.random()*(max-min+1)); }
+function randChoice(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
 
-function updateGirlImage(){
-  const img = GIRL_IMAGES[current % GIRL_IMAGES.length];
-  bgEl.style.backgroundImage = `url("${img}")`;
+function setButtonsEnabled(on){
+  document.querySelectorAll(".choice").forEach(b=>{
+    b.disabled = !on;
+  });
 }
 
-function showQuestion(){
-  locked=false;
-
-  updateGirlImage();
-
-  // 問題文：遅延(0.1s) → フェードイン
-  qEl.classList.add("fade");
-  qEl.textContent = "";
-  sEl.textContent = "…";
-
-  setTimeout(()=>{
-    qEl.textContent = questions[current].text;
-    requestAnimationFrame(()=> qEl.classList.remove("fade"));
-  }, 100);
-
-  cEl.textContent=`${current+1}/${questions.length}`;
+function buildButtons(){
   choicesEl.innerHTML="";
-
   shuffle(ALL_CHOICES).forEach(t=>{
-    const b=document.createElement("button");
-    b.className="choice "+CLASS_MAP[t];
-    b.textContent=t;
-    b.onclick=()=>answer(t,b);
+    const b = document.createElement("button");
+    b.className = "choice " + CLASS_MAP[t];
+    b.textContent = t;
+    b.onclick = ()=>answer(t,b);
     choicesEl.appendChild(b);
   });
 }
 
-function flash(){
-  gameScreen.classList.add("flash");
-  setTimeout(()=>gameScreen.classList.remove("flash"),300);
+function resetUIForWaiting(){
+  active = false;
+  locked = false;
+
+  // ふわっと消して待機
+  qEl.classList.add("fade");
+  sEl.classList.add("fade");
+  qEl.textContent = "";
+  sEl.textContent = "";
+  countdownEl.textContent = "-";
+  gaugeBar.style.transform = "scaleX(0)";
+  setButtonsEnabled(false);
 }
 
-function answer(choice,btn){
-  if(locked) return;
-  locked=true;
+function spawnCheeMusume(){
+  active = true;
+  locked = false;
 
-  // 押した瞬間に問題文フェードアウト
+  // ランダム女の子
+  const img = randChoice(GIRL_IMAGES);
+  bgEl.style.backgroundImage = `url("${img}")`;
+
+  // 表示演出：0.1秒遅延 → フェードイン
   qEl.classList.add("fade");
-
-  // 押した状態を一瞬キープ
-  btn.classList.add("selected");
-  document.querySelectorAll(".choice").forEach(b=>b.disabled=true);
-
-  const ok = choice===questions[current].correct;
-  if(ok) flash();
-  sEl.textContent = ok ? "ギュウ" : "……";
+  sEl.classList.add("fade");
+  qEl.textContent = "";
+  sEl.textContent = "";
 
   setTimeout(()=>{
-    current++;
+    // 問題文は最小（必要ならここを変える）
+    qEl.textContent = "";          // 文字いらないなら空のまま
+    sEl.textContent = "チー";      // チー娘が言ってくる
 
-    if(current < questions.length){
-      showQuestion();
-    }else{
-      // 終了：専用画像に切り替え
-      bgEl.style.backgroundImage = `url("${GIRL_END_IMAGE}")`;
+    requestAnimationFrame(()=>{
+      qEl.classList.remove("fade");
+      sEl.classList.remove("fade");
+    });
 
-      // ★ 終了時は文字を出さない
-      qEl.textContent = "";
-      sEl.textContent = "";
-      qEl.classList.add("fade");
+    beginTimer();
+    setButtonsEnabled(true);
+  }, 100);
+}
 
-      cEl.textContent=`${questions.length}/${questions.length}`;
-      choicesEl.innerHTML=`<button class="big" onclick="restart()">もう一回</button>`;
+function beginTimer(){
+  roundStart = performance.now();
+  cancelAnimationFrame(rafId);
+  clearTimeout(timeoutId);
+
+  const tick = (now)=>{
+    const elapsed = now - roundStart;
+    const remain = Math.max(0, TIME_LIMIT_MS - elapsed);
+
+    // カウントダウン表示（小数1桁）
+    countdownEl.textContent = (remain/1000).toFixed(1);
+
+    // ゲージ（1→0）
+    const ratio = remain / TIME_LIMIT_MS;
+    gaugeBar.style.transform = `scaleX(${ratio})`;
+
+    if(remain <= 0){
+      gameOver("TIMEOUT");
+      return;
     }
-  },800);
+    rafId = requestAnimationFrame(tick);
+  };
+
+  rafId = requestAnimationFrame(tick);
+
+  // 念のため保険タイムアウト
+  timeoutId = setTimeout(()=>gameOver("TIMEOUT"), TIME_LIMIT_MS + 50);
+}
+
+function scheduleNextSpawn(){
+  clearTimeout(nextSpawnId);
+  const wait = randInt(WAIT_MIN_MS, WAIT_MAX_MS);
+  nextSpawnId = setTimeout(()=>spawnCheeMusume(), wait);
+}
+
+function answer(choice, btn){
+  if(!active || locked) return;
+  locked = true;
+
+  btn.classList.add("selected");
+  setButtonsEnabled(false);
+
+  const ok = (choice === "ギュウ");
+
+  if(ok){
+    // 正解：スコア加算
+    score++;
+    scoreEl.textContent = String(score);
+
+    // ほんの一瞬だけ反応（無音でOK）
+    sEl.textContent = "ギュウ";
+
+    // 次へ
+    cancelAnimationFrame(rafId);
+    clearTimeout(timeoutId);
+    resetUIForWaiting();
+    scheduleNextSpawn();
+  }else{
+    gameOver("WRONG");
+  }
+}
+
+function gameOver(reason){
+  active = false;
+  locked = true;
+
+  cancelAnimationFrame(rafId);
+  clearTimeout(timeoutId);
+  clearTimeout(nextSpawnId);
+
+  setButtonsEnabled(false);
+
+  // 画面をエンド画像に（無ければそのまま）
+  if(GIRL_END_IMAGE){
+    bgEl.style.backgroundImage = `url("${GIRL_END_IMAGE}")`;
+  }
+
+  // 終了表示は“消したい”方針だったので全部消す
+  qEl.textContent = "";
+  sEl.textContent = "";
+  qEl.classList.add("fade");
+  sEl.classList.add("fade");
+  countdownEl.textContent = "-";
+  gaugeBar.style.transform = "scaleX(0)";
+
+  choicesEl.innerHTML = `<button class="big" id="retryBtn">もう一回</button>`;
+  document.getElementById("retryBtn").onclick = ()=>restart();
+}
+
+function startGame(){
+  score = 0;
+  scoreEl.textContent = "0";
+  buildButtons();
+
+  startScreen.classList.add("hide");
+  gameScreen.classList.remove("hide");
+
+  resetUIForWaiting();
+  scheduleNextSpawn();
 }
 
 function restart(){
-  current=0;
-  showQuestion(); // 通常画像に戻る
+  // ボタンを戻す
+  buildButtons();
+  resetUIForWaiting();
+  scheduleNextSpawn();
 }
 
-document.getElementById("startBtn").onclick=()=>{
-  startScreen.classList.add("hide");
-  gameScreen.classList.remove("hide");
-  restart();
-};
-
-// 終了画面の「もう一回」ボタン用に公開
-window.restart = restart;
+document.getElementById("startBtn").onclick = startGame;
 </script>
 
 </body>
